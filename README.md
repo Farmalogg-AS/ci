@@ -13,14 +13,14 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
 
 ```yaml
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@main
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
   with:
     release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@main
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.1
   with:
     bump: ${{ inputs.bump }}
 ```
