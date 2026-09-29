@@ -8,6 +8,12 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
 
 - `.github/actions/compute-qa-tag` — creates and pushes the next `vX.Y.0-qa.N` tag for a release branch.
 - `.github/actions/compute-release-tag` — creates and pushes the next production `vX.Y.Z` tag.
+- `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
+  under QA testing right now, and checks it out. Used so a push to `main`, the active release branch, or any
+  `longtest/*` branch all resolve to the same QA deploy correctly.
+- `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
+  the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
+  anywhere; exists only for the build that follows.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
 
@@ -25,6 +31,22 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
   uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.3
   with:
     bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
+```
+
+```yaml
+- name: Resolve which branch is actually under QA testing
+  id: qa_base
+  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.4
+  with:
+    qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+
+- name: Create QA tag
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
+  with:
+    release_branch: ${{ steps.qa_base.outputs.base_ref }}
+
+- name: Merge active longtest/* branches (ephemeral, not pushed)
+  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.4
 ```
 
 Both require the calling job's checkout step to use `fetch-depth: 0` (full tag history) and

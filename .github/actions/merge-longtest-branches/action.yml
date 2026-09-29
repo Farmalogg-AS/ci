@@ -1,0 +1,24 @@
+name: Merge longtest branches
+description: >
+  Ephemerally merges every active longtest/* branch on top of whatever's currently checked out, so the QA
+  build/deploy that follows includes long-lived external-test work alongside the release under test. Nothing
+  here is pushed anywhere — the merge only exists in this job's workspace, so long-lived work never leaks
+  into a release branch or main.
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        git fetch origin '+refs/heads/longtest/*:refs/remotes/origin/longtest/*'
+
+        for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/longtest/*); do
+            echo "::notice::Merging $ref into the ephemeral QA integration build"
+            if ! git merge --no-ff --no-edit "$ref"; then
+                echo "::error::Conflict merging $ref into QA — resolve it on that branch (merge the QA base in) and push again"
+                exit 1
+            fi
+        done

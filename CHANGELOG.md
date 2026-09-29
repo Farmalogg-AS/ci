@@ -3,6 +3,17 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.4
+
+- `resolve-qa-base-ref` — new action: resolves and checks out whichever branch is actually under QA testing
+  (a release branch, or `main` if none is active), regardless of whether `main`, the release branch, or a
+  `longtest/*` branch triggered the run.
+- `merge-longtest-branches` — new action: ephemerally merges every active `longtest/*` branch (long-lived
+  branches for extended external testing that must never reach `main`) on top of the QA base, for the build
+  only — never pushed. This is what lets long-lived test work stay visible in QA at all times, even while a
+  release is being tested, without ever leaking into a production release.
+- Tags now only ever get created against the real QA base ref, never against the ephemeral longtest merge.
+
 ## v0.3
 
 - `compute-release-tag` — now auto-detects minor vs. patch by looking for the highest `release/vX.Y` merge

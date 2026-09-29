@@ -1,0 +1,42 @@
+name: Resolve QA base ref
+description: >
+  Figures out which branch is "the real thing under QA testing" (a release branch, or main if none is
+  active), checks it out, and outputs its name. Works no matter which of main / the active release branch /
+  a longtest/* branch actually triggered the run, since a push to any of those should redeploy to the same
+  shared QA environment.
+
+inputs:
+  qa_release_branch:
+    description: 'Value of the vars.QA_RELEASE_BRANCH org variable (may be empty if no release is active)'
+    required: true
+
+outputs:
+  base_ref:
+    description: "The branch actually under QA testing, e.g. release/v2.3, or main if none is active"
+    value: ${{ steps.resolve.outputs.base_ref }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      run: |
+        TRIGGER="${{ github.ref_name }}"
+        QA_RELEASE_BRANCH="${{ inputs.qa_release_branch }}"
+
+        if [[ "$TRIGGER" == release/v* ]]; then
+            # A release branch pushed directly is the source of truth for its own state.
+            BASE_REF="$TRIGGER"
+        else
+            # main, or a longtest/* branch: neither has "its own" version, so defer to whichever release
+            # (if any) is actually under QA testing right now.
+            BASE_REF="${QA_RELEASE_BRANCH:-main}"
+        fi
+
+        echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+
+    - name: Check out the resolved base ref
+      shell: bash
+      run: |
+        git fetch origin "${{ steps.resolve.outputs.base_ref }}"
+        git checkout -B "${{ steps.resolve.outputs.base_ref }}" FETCH_HEAD
