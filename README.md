@@ -59,7 +59,7 @@ stay in each project's own workflow files.
 
 - `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
   `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote to QA` commit to that branch in
-  every repo that has it, so the normal push-based trigger (`qa-deploy-main.yml`) fires and creates the tag.
+  every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires and creates the tag.
   Currently only affects repos with that workflow (so far just `varer`); others are skipped silently until
   their workflows are rewritten too.
 
