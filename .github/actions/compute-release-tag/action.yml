@@ -1,0 +1,45 @@
+name: Compute release tag
+description: >
+  Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
+  Bumping "minor" resets the patch to 0 (a release branch was just shipped); bumping "patch" increments
+  just the patch number (a hotfix landed on main).
+
+inputs:
+  bump:
+    description: '"minor" or "patch"'
+    required: true
+
+outputs:
+  tag_name:
+    description: "The tag that was created, e.g. v2.3.0"
+    value: ${{ steps.tag.outputs.tag_name }}
+
+runs:
+  using: composite
+  steps:
+    - id: tag
+      shell: bash
+      run: |
+        # Latest final release tag (vX.Y.Z, excluding QA pre-release tags like vX.Y.0-qa.N)
+        LATEST=$(git tag --list "v*.*.*" | grep -vE -- '-' | sort -V | tail -1)
+        LATEST="${LATEST#v}"
+        MAJOR="${LATEST%%.*}"
+        REST="${LATEST#*.}"
+        MINOR="${REST%%.*}"
+        PATCH="${REST#*.}"
+
+        if [ "${{ inputs.bump }}" = "minor" ]; then
+            MINOR=$(( ${MINOR:-0} + 1 ))
+            PATCH=0
+        else
+            PATCH=$(( ${PATCH:-0} + 1 ))
+        fi
+
+        TAG_NAME="v${MAJOR:-0}.${MINOR:-0}.${PATCH:-0}"
+
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git tag -a "$TAG_NAME" -m "Deployed to PROD"
+        git push origin "$TAG_NAME"
+
+        echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"

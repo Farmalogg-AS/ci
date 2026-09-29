@@ -1,0 +1,32 @@
+# ci
+
+Shared GitHub Actions used across Farmalogg project repos. Public so any repo in the org can reference it
+via `uses:` without extra access configuration. Contains no secrets or business logic — just the generic
+git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
+
+## Actions
+
+- `.github/actions/compute-qa-tag` — creates and pushes the next `vX.Y.0-qa.N` tag for a release branch.
+- `.github/actions/compute-release-tag` — creates and pushes the next production `vX.Y.Z` tag.
+
+## Usage
+
+```yaml
+- name: Create QA tag
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@main
+  with:
+    release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+```
+
+```yaml
+- name: Create release tag
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@main
+  with:
+    bump: ${{ inputs.bump }}
+```
+
+Both require the calling job's checkout step to use `fetch-depth: 0` (full tag history) and
+`permissions: contents: write` (to push the tag).
+
+Only the tag-computation logic is shared here — build/test/deploy steps differ per repo's tech stack and
+stay in each project's own workflow files.
