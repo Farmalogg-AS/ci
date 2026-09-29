@@ -36,7 +36,22 @@ stay in each project's own workflow files.
 ## Scripts
 
 - `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
-  `QA_RELEASE_BRANCH` org variable and triggers a QA deploy in every repo that has that branch. Needed because
-  updating the variable alone doesn't trigger anything — see [RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
-  Currently only repos with a `qa-deploy.yml` workflow (so far just `varer`) will actually deploy; others are
-  skipped silently until their workflows are rewritten too.
+  `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote to QA` commit to that branch in
+  every repo that has it, so the normal push-based trigger (`qa-deploy-main.yml`) fires and creates the tag.
+  Currently only affects repos with that workflow (so far just `varer`); others are skipped silently until
+  their workflows are rewritten too.
+
+### Doing it manually, without the script
+
+1. Update the `QA_RELEASE_BRANCH` org variable (Settings → Organization → Secrets and variables → Actions →
+   Variables) to the new release branch, e.g. `release/v2.4`.
+2. For each repo that has that branch: push a commit to it. If you're merging `main` in anyway (the normal
+   "sync" step), that push is enough — it'll trigger the deploy now that the variable points there. If the
+   branch is already fully up to date and there's nothing to merge, push an empty commit instead so there's
+   still something to trigger it:
+   ```
+   git checkout release/v2.4
+   git commit --allow-empty -m "chore: promote release/v2.4 to QA"
+   git push origin release/v2.4
+   ```
+

@@ -3,6 +3,12 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.2
+
+- `scripts/promote-to-qa.sh` — reworked to push an empty "chore: promote to QA" commit after updating
+  `QA_RELEASE_BRANCH`, instead of manually dispatching `qa-deploy.yml`. This reuses the normal push-based
+  trigger (same as any other sync-with-main push) instead of a separate manual-trigger code path.
+
 ## v0.1
 
 - `compute-qa-tag` — creates/pushes the next `vX.Y.0-qa.N` tag for a release branch.
