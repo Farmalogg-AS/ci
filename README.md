@@ -30,3 +30,11 @@ Both require the calling job's checkout step to use `fetch-depth: 0` (full tag h
 
 Only the tag-computation logic is shared here — build/test/deploy steps differ per repo's tech stack and
 stay in each project's own workflow files.
+
+## Scripts
+
+- `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
+  `QA_RELEASE_BRANCH` org variable and triggers a QA deploy in every repo that has that branch. Needed because
+  updating the variable alone doesn't trigger anything — see [RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
+  Currently only repos with a `qa-deploy.yml` workflow (so far just `varer`) will actually deploy; others are
+  skipped silently until their workflows are rewritten too.
