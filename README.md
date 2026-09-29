@@ -9,6 +9,8 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
 - `.github/actions/compute-qa-tag` — creates and pushes the next `vX.Y.0-qa.N` tag for a release branch.
 - `.github/actions/compute-release-tag` — creates and pushes the next production `vX.Y.Z` tag.
 
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
+
 ## Usage
 
 ```yaml
