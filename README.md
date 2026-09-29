@@ -22,9 +22,9 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.1
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.3
   with:
-    bump: ${{ inputs.bump }}
+    bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
 ```
 
 Both require the calling job's checkout step to use `fetch-depth: 0` (full tag history) and

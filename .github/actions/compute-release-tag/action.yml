@@ -1,13 +1,15 @@
 name: Compute release tag
 description: >
   Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
-  Bumping "minor" resets the patch to 0 (a release branch was just shipped); bumping "patch" increments
-  just the patch number (a hotfix landed on main).
+  Auto-detects minor vs. patch by looking for a "release/vX.Y" merge commit into main since the last tag
+  (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
+  it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
 
 inputs:
   bump:
-    description: '"minor" or "patch"'
-    required: true
+    description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
+    required: false
+    default: ""
 
 outputs:
   tag_name:
@@ -21,21 +23,51 @@ runs:
       shell: bash
       run: |
         # Latest final release tag (vX.Y.Z, excluding QA pre-release tags like vX.Y.0-qa.N)
-        LATEST=$(git tag --list "v*.*.*" | grep -vE -- '-' | sort -V | tail -1)
-        LATEST="${LATEST#v}"
+        LATEST_TAG=$(git tag --list "v*.*.*" | grep -vE -- '-' | sort -V | tail -1)
+        LATEST="${LATEST_TAG#v}"
         MAJOR="${LATEST%%.*}"
         REST="${LATEST#*.}"
         MINOR="${REST%%.*}"
         PATCH="${REST#*.}"
+        MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
 
-        if [ "${{ inputs.bump }}" = "minor" ]; then
-            MINOR=$(( ${MINOR:-0} + 1 ))
-            PATCH=0
-        else
-            PATCH=$(( ${PATCH:-0} + 1 ))
+        BUMP="${{ inputs.bump }}"
+
+        if [ -z "$BUMP" ]; then
+            # Auto-detect: look for the highest "release/vX.Y" merged into main since the last tag.
+            RANGE=""
+            [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
+            MERGED_XY=$(git log $RANGE --merges --format=%s \
+                | grep -oE 'release/v[0-9]+\.[0-9]+' \
+                | sed 's#release/v##' \
+                | sort -V | tail -1)
+
+            if [ -n "$MERGED_XY" ]; then
+                MERGED_MAJOR="${MERGED_XY%%.*}"
+                MERGED_MINOR="${MERGED_XY#*.}"
+                # Newer major.minor than the latest tag => a release branch was just shipped => minor bump.
+                if [ "$MERGED_MAJOR.$MERGED_MINOR" != "$MAJOR.$MINOR" ] && \
+                   printf '%s\n%s\n' "$MAJOR.$MINOR" "$MERGED_MAJOR.$MERGED_MINOR" | sort -V | tail -1 | grep -qx "$MERGED_MAJOR.$MERGED_MINOR"; then
+                    BUMP="minor"
+                    MAJOR="$MERGED_MAJOR"
+                    MINOR="$MERGED_MINOR"
+                else
+                    BUMP="patch"
+                fi
+            else
+                BUMP="patch"
+            fi
         fi
 
-        TAG_NAME="v${MAJOR:-0}.${MINOR:-0}.${PATCH:-0}"
+        if [ "$BUMP" = "minor" ]; then
+            # Manual override with no detected release/vX.Y merge: just increment the minor.
+            [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
+            PATCH=0
+        else
+            PATCH=$(( PATCH + 1 ))
+        fi
+
+        TAG_NAME="v${MAJOR}.${MINOR}.${PATCH}"
 
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
