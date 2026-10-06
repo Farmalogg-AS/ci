@@ -14,6 +14,9 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
 - `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
   anywhere; exists only for the build that follows.
+- `.github/actions/sync-main-into-releases` — merges `main` into every `release/v*` branch that doesn't
+  already contain it (skips branches with no diff, so this doesn't loop back on a release branch's own merge
+  into `main`), and pushes the result so each branch's own CI retriggers normally.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
 
@@ -47,6 +50,13 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
   uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.4
+```
+
+```yaml
+- name: Sync main into release branches
+  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.5
+  with:
+    push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
 
 Both require the calling job's checkout step to use `fetch-depth: 0` (full tag history) and

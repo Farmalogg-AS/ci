@@ -1,0 +1,56 @@
+name: Sync main into release branches
+description: >
+  Merges main into every active release/v* branch that doesn't already contain it, so release branches never
+  drift out of sync with hotfixes landed on main. Skips any branch where main is already an ancestor (nothing
+  to merge) — this also naturally prevents a release branch's own "ship to main" merge from looping back into
+  itself, since at that point the release branch already contains everything on main.
+  Pushes real commits (not ephemeral, unlike merge-longtest-branches), so each sync push retriggers that
+  branch's normal CI (TEST deploy, and QA deploy/tag if it's the active QA_RELEASE_BRANCH) — this requires a
+  token input that is NOT the default GITHUB_TOKEN, since pushes made with GITHUB_TOKEN don't retrigger other
+  workflows.
+  On a merge conflict, that one branch is skipped (left for a human to resolve manually) and the job fails
+  after attempting every other branch, rather than aborting the whole run on the first conflict.
+
+inputs:
+  push_token:
+    description: >
+      Token used for `git push`, needing repo contents:write. Must be a PAT or GitHub App token, not the
+      default GITHUB_TOKEN, so the sync push retriggers downstream workflows on each release branch.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git remote set-url origin "https://x-access-token:${{ inputs.push_token }}@github.com/${{ github.repository }}.git"
+
+        git fetch origin main '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+
+        FAILED=()
+        for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/release/v*); do
+            branch="${ref#origin/}"
+
+            if git merge-base --is-ancestor origin/main "$ref"; then
+                echo "::notice::$branch already contains main, nothing to sync"
+                continue
+            fi
+
+            echo "::notice::Syncing main into $branch"
+            git checkout -B "$branch" "$ref"
+
+            if git merge --no-ff --no-edit origin/main; then
+                git push origin "$branch"
+            else
+                echo "::error::Conflict syncing main into $branch — resolve manually (merge main into $branch and push)"
+                git merge --abort
+                FAILED+=("$branch")
+            fi
+        done
+
+        if [ ${#FAILED[@]} -gt 0 ]; then
+            echo "::error::Failed to sync main into: ${FAILED[*]}"
+            exit 1
+        fi

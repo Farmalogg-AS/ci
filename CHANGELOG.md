@@ -8,6 +8,10 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 - `compute-qa-tag` / `compute-release-tag` — tags now live under dedicated `qa/` and `release/` namespaces
   (`qa/vX.Y.0.N` and `release/vX.Y.Z`) instead of flat `vX.Y.0-qa.N` / `vX.Y.Z`, so QA and production tags
   are visually and programmatically distinguishable (e.g. `git tag --list "release/*"`).
+- `sync-main-into-releases` — new action: merges `main` into every `release/v*` branch that doesn't already
+  contain it, and pushes the result. Skips branches with nothing to merge, which also prevents a release
+  branch's own merge into `main` from looping back into itself. Requires a non-default push token so the
+  sync push retriggers each branch's own CI.
 
 ## v0.4
 
