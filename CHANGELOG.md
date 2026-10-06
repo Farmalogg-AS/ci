@@ -3,6 +3,12 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.5
+
+- `compute-qa-tag` / `compute-release-tag` — tags now live under dedicated `qa/` and `release/` namespaces
+  (`qa/vX.Y.0.N` and `release/vX.Y.Z`) instead of flat `vX.Y.0-qa.N` / `vX.Y.Z`, so QA and production tags
+  are visually and programmatically distinguishable (e.g. `git tag --list "release/*"`).
+
 ## v0.4
 
 - `resolve-qa-base-ref` — new action: resolves and checks out whichever branch is actually under QA testing

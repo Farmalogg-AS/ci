@@ -4,6 +4,8 @@ description: >
   Auto-detects minor vs. patch by looking for a "release/vX.Y" merge commit into main since the last tag
   (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
   it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
+  Tags live under the release/ namespace (refs/tags/release/...), separate from the qa/ namespace used for
+  QA pre-release tags.
 
 inputs:
   bump:
@@ -13,7 +15,7 @@ inputs:
 
 outputs:
   tag_name:
-    description: "The tag that was created, e.g. v2.3.0"
+    description: "The tag that was created, e.g. release/v2.3.0"
     value: ${{ steps.tag.outputs.tag_name }}
 
 runs:
@@ -22,9 +24,9 @@ runs:
     - id: tag
       shell: bash
       run: |
-        # Latest final release tag (vX.Y.Z, excluding QA pre-release tags like vX.Y.0-qa.N)
-        LATEST_TAG=$(git tag --list "v*.*.*" | grep -vE -- '-' | sort -V | tail -1)
-        LATEST="${LATEST_TAG#v}"
+        # Latest final release tag (release/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
+        LATEST_TAG=$(git tag --list "release/v*.*.*" | sort -V | tail -1)
+        LATEST="${LATEST_TAG#release/v}"
         MAJOR="${LATEST%%.*}"
         REST="${LATEST#*.}"
         MINOR="${REST%%.*}"
@@ -67,7 +69,7 @@ runs:
             PATCH=$(( PATCH + 1 ))
         fi
 
-        TAG_NAME="v${MAJOR}.${MINOR}.${PATCH}"
+        TAG_NAME="release/v${MAJOR}.${MINOR}.${PATCH}"
 
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"

@@ -1,34 +1,36 @@
 name: Compute QA tag
 description: >
-  Computes the next vX.Y.0-qa.N tag for the given release branch, creates it, and pushes it.
-  X.Y comes from the branch name; N auto-increments from the highest existing qa tag for that X.Y.
+    Computes the next qa/vX.Y.0.N tag for the given release branch, creates it, and pushes it.
+    X.Y comes from the branch name; N auto-increments from the highest existing qa tag for that X.Y.
+    Tags live under the qa/ namespace (refs/tags/qa/...) to keep them visually and programmatically separate
+    from production release tags.
 
 inputs:
-  release_branch:
-    description: 'Release branch this QA build targets, e.g. "release/v2.3"'
-    required: true
+    release_branch:
+        description: 'Release branch this QA build targets, e.g. "release/v2.3"'
+        required: true
 
 outputs:
-  tag_name:
-    description: "The tag that was created, e.g. v2.3.0-qa.4"
-    value: ${{ steps.tag.outputs.tag_name }}
+    tag_name:
+        description: "The tag that was created, e.g. qa/v2.3.0.4"
+        value: ${{ steps.tag.outputs.tag_name }}
 
 runs:
-  using: composite
-  steps:
-    - id: tag
-      shell: bash
-      run: |
-        BRANCH="${{ inputs.release_branch }}"
-        MAJOR_MINOR="${BRANCH#release/v}"
+    using: composite
+    steps:
+        - id: tag
+          shell: bash
+          run: |
+              BRANCH="${{ inputs.release_branch }}"
+              MAJOR_MINOR="${BRANCH#release/v}"
 
-        LAST_N=$(git tag --list "v${MAJOR_MINOR}.0-qa.*" | sed -E "s/.*-qa\.([0-9]+)$/\1/" | sort -n | tail -1)
-        NEXT_N=$(( ${LAST_N:-0} + 1 ))
-        TAG_NAME="v${MAJOR_MINOR}.0-qa.${NEXT_N}"
+              LAST_N=$(git tag --list "qa/v${MAJOR_MINOR}.0.*" | sed -E "s/.*\.([0-9]+)$/\1/" | sort -n | tail -1)
+              NEXT_N=$(( ${LAST_N:-0} + 1 ))
+              TAG_NAME="qa/v${MAJOR_MINOR}.0.${NEXT_N}"
 
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git tag -a "$TAG_NAME" -m "Deployed to QA"
-        git push origin "$TAG_NAME"
+              git config user.name "github-actions"
+              git config user.email "github-actions@github.com"
+              git tag -a "$TAG_NAME" -m "Deployed to QA"
+              git push origin "$TAG_NAME"
 
-        echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+              echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"

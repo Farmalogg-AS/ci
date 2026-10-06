@@ -6,8 +6,8 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
 
 ## Actions
 
-- `.github/actions/compute-qa-tag` — creates and pushes the next `vX.Y.0-qa.N` tag for a release branch.
-- `.github/actions/compute-release-tag` — creates and pushes the next production `vX.Y.Z` tag.
+- `.github/actions/compute-qa-tag` — creates and pushes the next `qa/vX.Y.0.N` tag for a release branch.
+- `.github/actions/compute-release-tag` — creates and pushes the next production `release/vX.Y.Z` tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
   under QA testing right now, and checks it out. Used so a push to `main`, the active release branch, or any
   `longtest/*` branch all resolve to the same QA deploy correctly.
@@ -23,14 +23,14 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
 - name: Create QA tag
   uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
   with:
-    release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+      release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
   uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.3
   with:
-    bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
+      bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
 ```
 
 ```yaml
@@ -38,12 +38,12 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
   id: qa_base
   uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.4
   with:
-    qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+      qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
 - name: Create QA tag
   uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
   with:
-    release_branch: ${{ steps.qa_base.outputs.base_ref }}
+      release_branch: ${{ steps.qa_base.outputs.base_ref }}
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
   uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.4
@@ -71,9 +71,8 @@ stay in each project's own workflow files.
    "sync" step), that push is enough — it'll trigger the deploy now that the variable points there. If the
    branch is already fully up to date and there's nothing to merge, push an empty commit instead so there's
    still something to trigger it:
-   ```
-   git checkout release/v2.4
-   git commit --allow-empty -m "chore: promote release/v2.4 to QA"
-   git push origin release/v2.4
-   ```
-
+    ```
+    git checkout release/v2.4
+    git commit --allow-empty -m "chore: promote release/v2.4 to QA"
+    git push origin release/v2.4
+    ```
