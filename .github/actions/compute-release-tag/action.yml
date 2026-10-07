@@ -1,79 +1,79 @@
-name: Compute release tag
+name: Compute release (Prod) tag
 description: >
-  Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
-  Auto-detects minor vs. patch by looking for a "release/vX.Y" merge commit into main since the last tag
-  (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
-  it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
-  Tags live under the release/ namespace (refs/tags/release/...), separate from the qa/ namespace used for
-  QA pre-release tags.
+    Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
+    Auto-detects minor vs. patch by looking for a "prod/vX.Y" merge commit into main since the last tag
+    (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
+    it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
+    Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
+    QA pre-release tags.
 
 inputs:
-  bump:
-    description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
-    required: false
-    default: ""
+    bump:
+        description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
+        required: false
+        default: ""
 
 outputs:
-  tag_name:
-    description: "The tag that was created, e.g. release/v2.3.0"
-    value: ${{ steps.tag.outputs.tag_name }}
+    tag_name:
+        description: "The tag that was created, e.g. prod/v2.3.0"
+        value: ${{ steps.tag.outputs.tag_name }}
 
 runs:
-  using: composite
-  steps:
-    - id: tag
-      shell: bash
-      run: |
-        # Latest final release tag (release/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
-        LATEST_TAG=$(git tag --list "release/v*.*.*" | sort -V | tail -1)
-        LATEST="${LATEST_TAG#release/v}"
-        MAJOR="${LATEST%%.*}"
-        REST="${LATEST#*.}"
-        MINOR="${REST%%.*}"
-        PATCH="${REST#*.}"
-        MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
+    using: composite
+    steps:
+        - id: tag
+          shell: bash
+          run: |
+              # Latest final release tag (prod/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
+              LATEST_TAG=$(git tag --list "prod/v*.*.*" | sort -V | tail -1)
+              LATEST="${LATEST_TAG#prod/v}"
+              MAJOR="${LATEST%%.*}"
+              REST="${LATEST#*.}"
+              MINOR="${REST%%.*}"
+              PATCH="${REST#*.}"
+              MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
 
-        BUMP="${{ inputs.bump }}"
+              BUMP="${{ inputs.bump }}"
 
-        if [ -z "$BUMP" ]; then
-            # Auto-detect: look for the highest "release/vX.Y" merged into main since the last tag.
-            RANGE=""
-            [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
-            MERGED_XY=$(git log $RANGE --merges --format=%s \
-                | grep -oE 'release/v[0-9]+\.[0-9]+' \
-                | sed 's#release/v##' \
-                | sort -V | tail -1)
+              if [ -z "$BUMP" ]; then
+                  # Auto-detect: look for the highest "prod/vX.Y" merged into main since the last tag.
+                  RANGE=""
+                  [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
+                  MERGED_XY=$(git log $RANGE --merges --format=%s \
+                      | grep -oE 'prod/v[0-9]+\.[0-9]+' \
+                      | sed 's#prod/v##' \
+                      | sort -V | tail -1)
 
-            if [ -n "$MERGED_XY" ]; then
-                MERGED_MAJOR="${MERGED_XY%%.*}"
-                MERGED_MINOR="${MERGED_XY#*.}"
-                # Newer major.minor than the latest tag => a release branch was just shipped => minor bump.
-                if [ "$MERGED_MAJOR.$MERGED_MINOR" != "$MAJOR.$MINOR" ] && \
-                   printf '%s\n%s\n' "$MAJOR.$MINOR" "$MERGED_MAJOR.$MERGED_MINOR" | sort -V | tail -1 | grep -qx "$MERGED_MAJOR.$MERGED_MINOR"; then
-                    BUMP="minor"
-                    MAJOR="$MERGED_MAJOR"
-                    MINOR="$MERGED_MINOR"
-                else
-                    BUMP="patch"
-                fi
-            else
-                BUMP="patch"
-            fi
-        fi
+                  if [ -n "$MERGED_XY" ]; then
+                      MERGED_MAJOR="${MERGED_XY%%.*}"
+                      MERGED_MINOR="${MERGED_XY#*.}"
+                      # Newer major.minor than the latest tag => a release branch was just shipped => minor bump.
+                      if [ "$MERGED_MAJOR.$MERGED_MINOR" != "$MAJOR.$MINOR" ] && \
+                         printf '%s\n%s\n' "$MAJOR.$MINOR" "$MERGED_MAJOR.$MERGED_MINOR" | sort -V | tail -1 | grep -qx "$MERGED_MAJOR.$MERGED_MINOR"; then
+                          BUMP="minor"
+                          MAJOR="$MERGED_MAJOR"
+                          MINOR="$MERGED_MINOR"
+                      else
+                          BUMP="patch"
+                      fi
+                  else
+                      BUMP="patch"
+                  fi
+              fi
 
-        if [ "$BUMP" = "minor" ]; then
-            # Manual override with no detected release/vX.Y merge: just increment the minor.
-            [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
-            PATCH=0
-        else
-            PATCH=$(( PATCH + 1 ))
-        fi
+              if [ "$BUMP" = "minor" ]; then
+                  # Manual override with no detected prod/vX.Y merge: just increment the minor.
+                  [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
+                  PATCH=0
+              else
+                  PATCH=$(( PATCH + 1 ))
+              fi
 
-        TAG_NAME="release/v${MAJOR}.${MINOR}.${PATCH}"
+              TAG_NAME="prod/v${MAJOR}.${MINOR}.${PATCH}"
 
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git tag -a "$TAG_NAME" -m "Deployed to PROD"
-        git push origin "$TAG_NAME"
+              git config user.name "github-actions"
+              git config user.email "github-actions@github.com"
+              git tag -a "$TAG_NAME" -m "Deployed to PROD"
+              git push origin "$TAG_NAME"
 
-        echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+              echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
