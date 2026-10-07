@@ -41,14 +41,14 @@ for how to make and release changes.
 
 ```yaml
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.9
   with:
       release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.9
   with:
       bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
       image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
@@ -57,13 +57,13 @@ for how to make and release changes.
 ```yaml
 - name: Resolve which branch is actually under QA testing
   id: qa_base
-  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.9
   with:
       qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
   id: longtest
-  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.9
 
 # ... build and deploy, e.g. with deploy-container-app as step "deploy" ...
 
@@ -72,7 +72,7 @@ for how to make and release changes.
   run: git checkout --detach "${{ steps.qa_base.outputs.base_sha }}"
 
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.9
   with:
       release_branch: ${{ steps.qa_base.outputs.base_ref }}
       longtest_branches: ${{ steps.longtest.outputs.merged }} # optional, listed in the tag annotation
@@ -81,14 +81,14 @@ for how to make and release changes.
 
 ```yaml
 - name: Sync main into release branches
-  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.9
   with:
       push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
 
 ```yaml
 - name: Set up Java and Maven
-  uses: Farmalogg-AS/ci/.github/actions/setup-java-maven@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/setup-java-maven@v0.9
   with:
       maven_repository_url: https://maven.pkg.github.com/<owner>/<repo> # omit if no extra repository is needed
       maven_repository_username: ${{ secrets.GH_PACKAGES_USERNAME }}
@@ -97,7 +97,7 @@ for how to make and release changes.
 
 ```yaml
 - name: Deploy to Azure Container Apps
-  uses: Farmalogg-AS/ci/.github/actions/deploy-container-app@v0.8
+  uses: Farmalogg-AS/ci/.github/actions/deploy-container-app@v0.9
   with:
       azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
       registry_login_server: ${{ vars.REGISTRY_LOGIN_SERVER }}
