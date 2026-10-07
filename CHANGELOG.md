@@ -20,6 +20,9 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   `qa/branch/<branch>/<run id>.<run attempt>` tag, so callers no longer need their own tag step for manual
   deploys of other branches. Before, those got a meaningless tag such as `qa/vmain.0.1`. The input is still
   called `release_branch`.
+- `resolve-qa-base-ref` — new `base_sha` output: the commit of `base_ref` that was checked out, i.e. what to
+  tag after deploying. Replaces the step callers needed to save `git rev-parse HEAD` before
+  `merge-longtest-branches` moved HEAD.
 
 ## v0.7
 

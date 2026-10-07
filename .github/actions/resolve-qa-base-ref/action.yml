@@ -1,7 +1,7 @@
 name: Resolve QA base ref
 description: >
   Figures out which branch is "the real thing under QA testing" (a release branch, or main if none is
-  active), checks it out, and outputs its name. Works no matter which of main / the active release branch /
+  active), checks it out, and outputs its name and commit. Works no matter which of main / the active release branch /
   a longtest/* branch actually triggered the run, since a push to any of those should redeploy to the same
   shared QA environment.
 
@@ -14,6 +14,11 @@ outputs:
   base_ref:
     description: "The branch actually under QA testing, e.g. release/v2.3, or main if none is active"
     value: ${{ steps.resolve.outputs.base_ref }}
+  base_sha:
+    description: >
+      Commit of base_ref that was checked out. Tag this after deploying rather than HEAD, which
+      merge-longtest-branches moves to an ephemeral merge commit.
+    value: ${{ steps.checkout.outputs.base_sha }}
 
 runs:
   using: composite
@@ -36,9 +41,11 @@ runs:
         echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
 
     - name: Check out the resolved base ref
+      id: checkout
       shell: bash
       env:
         BASE_REF: ${{ steps.resolve.outputs.base_ref }}
       run: |
         git fetch origin "$BASE_REF"
         git checkout -B "$BASE_REF" FETCH_HEAD
+        echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"

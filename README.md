@@ -13,7 +13,7 @@ calling workflow.
   unique `qa/branch/<branch>/<run>` tag for any other branch deployed to QA.
 - `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
-  under QA testing right now, and checks it out. Used so a push to `main`, the active release branch, or any
+  under QA testing right now, checks it out, and outputs its name and commit. Used so a push to `main`, the active release branch, or any
   `longtest/*` branch all resolve to the same QA deploy correctly.
 - `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
@@ -48,25 +48,21 @@ for how to make and release changes.
 ```yaml
 - name: Resolve which branch is actually under QA testing
   id: qa_base
-  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.8
   with:
       qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
-- name: Save QA base commit
-  id: qa_base_commit
-  run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
 - name: Merge active longtest/* branches (ephemeral, not pushed)
-  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.8
 
 # ... build and deploy ...
 
 # Tag only after a successful deploy, and on the real base commit rather than the ephemeral longtest merge.
 - name: Restore QA base commit for tagging
-  run: git checkout --detach "${{ steps.qa_base_commit.outputs.sha }}"
+  run: git checkout --detach "${{ steps.qa_base.outputs.base_sha }}"
 
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.8
   with:
       release_branch: ${{ steps.qa_base.outputs.base_ref }}
 ```
