@@ -15,6 +15,9 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   QA tag of that release (or, for its first, the latest prod tag): `feat`, `fix`, `perf` and `vis` commits by
   subject, other types counted. To record the longtest branches and image, pass the new optional inputs
   `longtest_branches` (`merge-longtest-branches`' `merged` output) and `image`.
+- `compute-release-tag` — the tag annotation now records the previous tag, why it bumped minor or patch,
+  trigger, a link to the run, and the changes since the previous tag, listed as for QA tags. To record the
+  image, pass the new optional input `image`.
 
 ## v0.8
 

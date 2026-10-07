@@ -5,11 +5,18 @@ description: >
     (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
     it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
     Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
-    QA pre-release tags.
+    QA pre-release tags. The tag annotation records the previous tag, why it bumped as it did, the image, the
+    trigger, a link to the run, and the changes since the previous tag.
 
 inputs:
     bump:
         description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
+        required: false
+        default: ""
+    image:
+        description: >
+            The deployed container image, e.g. deploy-container-app's image output. Recorded in the tag annotation if
+            given.
         required: false
         default: ""
 
@@ -23,6 +30,8 @@ runs:
     steps:
         - id: tag
           shell: bash
+          env:
+              IMAGE: ${{ inputs.image }}
           run: |
               # Latest final release tag (prod/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
               LATEST_TAG=$(git tag --list "prod/v*.*.*" | sort -V | tail -1)
@@ -34,6 +43,7 @@ runs:
               MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
 
               BUMP="${{ inputs.bump }}"
+              REASON="set manually"
 
               if [ -z "$BUMP" ]; then
                   # Auto-detect: look for the highest "release/vX.Y" branch merged into main since the last tag.
@@ -54,11 +64,14 @@ runs:
                           BUMP="minor"
                           MAJOR="$MERGED_MAJOR"
                           MINOR="$MERGED_MINOR"
+                          REASON="auto: release/v$MERGED_XY merged"
                       else
                           BUMP="patch"
+                          REASON="auto: no new release branch merged"
                       fi
                   else
                       BUMP="patch"
+                      REASON="auto: no new release branch merged"
                   fi
               fi
 
@@ -74,7 +87,19 @@ runs:
 
               git config user.name "github-actions"
               git config user.email "github-actions@github.com"
-              git tag -a "$TAG_NAME" -m "Deployed to PROD"
+
+              {
+                  echo "Deployed to PROD"
+                  echo
+                  echo "Previous: ${LATEST_TAG:-none}"
+                  echo "Bump: $BUMP ($REASON)"
+                  bash "$GITHUB_ACTION_PATH/../lib/describe-run.sh"
+                  if [ -n "$LATEST_TAG" ]; then
+                      echo
+                      echo "Changes since $LATEST_TAG:"
+                      bash "$GITHUB_ACTION_PATH/../lib/describe-changes.sh" "$LATEST_TAG..HEAD"
+                  fi
+              } | git tag -a "$TAG_NAME" --cleanup=whitespace -F -
               git push origin "$TAG_NAME"
 
               echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
