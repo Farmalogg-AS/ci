@@ -13,17 +13,24 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 ## v0.6
 
-- `compute-release-tag` — now creates/pushes the next production `prod/vX.Y.Z` tag instead of `release/vX.Y.Z`, so production tags are visually and programmatically distinguishable from QA tags (e.g. `git tag --list "prod/*"`).
+- `compute-release-tag` — now creates/pushes the next production `prod/vX.Y.Z` tag instead of
+  `release/vX.Y.Z`, so "release" only ever means a branch, never a tag. Existing `release/vX.Y.Z` tags are
+  ignored when computing the next one, so recreate them as `prod/vX.Y.Z` before bumping.
+- Known issue: `compute-release-tag` treats every run as a hotfix (patch bump). Fixed in v0.7; use that
+  instead.
 
 ## v0.5
 
 - `compute-qa-tag` / `compute-release-tag` — tags now live under dedicated `qa/` and `release/` namespaces
   (`qa/vX.Y.0.N` and `release/vX.Y.Z`) instead of flat `vX.Y.0-qa.N` / `vX.Y.Z`, so QA and production tags
-  are visually and programmatically distinguishable (e.g. `git tag --list "release/*"`).
+  are visually and programmatically distinguishable (e.g. `git tag --list "release/*"`). Tags in the old format
+  are ignored when computing the next one: QA numbering restarts at `.1` for each release, and existing
+  `vX.Y.Z` production tags must be recreated as `release/vX.Y.Z` before bumping.
 - `sync-main-into-releases` — new action: merges `main` into every `release/v*` branch that doesn't already
   contain it, and pushes the result. Skips branches with nothing to merge, which also prevents a release
   branch's own merge into `main` from looping back into itself. Requires a non-default push token so the
-  sync push retriggers each branch's own CI.
+  sync push retriggers each branch's own CI. Until v0.7, the caller's checkout also needs
+  `persist-credentials: false` for that to work.
 
 ## v0.4
 
@@ -34,7 +41,9 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   branches for extended external testing that must never reach `main`) on top of the QA base, for the build
   only — never pushed. This is what lets long-lived test work stay visible in QA at all times, even while a
   release is being tested, without ever leaking into a production release.
-- Tags now only ever get created against the real QA base ref, never against the ephemeral longtest merge.
+- To use these, add `longtest/*` to the QA workflow's push trigger, and run `compute-qa-tag` on the resolved
+  base commit rather than after `merge-longtest-branches`, so QA tags never point at the ephemeral merge (see
+  the usage example in [README.md](README.md)).
 
 ## v0.3
 
@@ -47,7 +56,8 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 - `scripts/promote-to-qa.sh` — reworked to push an empty "chore: promote to QA" commit after updating
   `QA_RELEASE_BRANCH`, instead of manually dispatching `qa-deploy.yml`. This reuses the normal push-based
-  trigger (same as any other sync-with-main push) instead of a separate manual-trigger code path.
+  trigger (same as any other sync-with-main push) instead of a separate manual-trigger code path. Repos need a
+  QA workflow triggered by pushes to the active release branch for this to deploy anything.
 
 ## v0.1
 
