@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Switches the release currently under QA testing: updates the QA_RELEASE_BRANCH org variable, then pushes an
-# empty "chore: promote to QA" commit to that branch in every repo that has it.
+# empty "chore: promote <release-branch> to QA" commit to that branch in every repo that has it.
 #
 # Why the empty commit: qa.push.yml is triggered by a push to the release branch named in
 # QA_RELEASE_BRANCH (same as any other "sync main into the release branch" push). Updating the variable alone

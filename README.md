@@ -119,9 +119,9 @@ the build command itself, and when to tag stay in each project's own workflow fi
 ## Scripts
 
 - `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
-  `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote to QA` commit to that branch in
-  every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires, deploys and creates the tag.
-  Repos without that branch are skipped. Repos that have the branch but not yet the new `qa.push.yml` still
+  `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote <release-branch> to QA` commit to that
+  branch in every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires, deploys and creates the
+  tag. Repos without that branch are skipped. Repos that have the branch but not yet the new `qa.push.yml` still
   get the empty commit; it just doesn't deploy anything there.
 
 ### Doing it manually, without the script
