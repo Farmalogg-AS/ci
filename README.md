@@ -26,7 +26,7 @@ for how to make and release changes.
 
 ```yaml
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.7
   with:
       release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
@@ -41,7 +41,7 @@ for how to make and release changes.
 ```yaml
 - name: Resolve which branch is actually under QA testing
   id: qa_base
-  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.7
   with:
       qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
@@ -50,7 +50,7 @@ for how to make and release changes.
   run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
-  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.7
 
 # ... build and deploy ...
 
@@ -59,7 +59,7 @@ for how to make and release changes.
   run: git checkout --detach "${{ steps.qa_base_commit.outputs.sha }}"
 
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.7
   with:
       release_branch: ${{ steps.qa_base.outputs.base_ref }}
 ```
