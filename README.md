@@ -33,14 +33,14 @@ for how to make and release changes.
 
 ```yaml
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.8
   with:
       release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.8
   with:
       bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
 ```
@@ -69,7 +69,7 @@ for how to make and release changes.
 
 ```yaml
 - name: Sync main into release branches
-  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.7
+  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.8
   with:
       push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
