@@ -22,6 +22,8 @@ calling workflow.
   into `main`), and pushes the result so each branch's own CI retriggers normally.
 - `.github/actions/setup-java-maven` — installs a JDK with Maven caching, and optionally configures an
   authenticated Maven repository (e.g. GitHub Packages) to resolve dependencies from.
+- `.github/actions/deploy-container-app` — logs in to Azure and the container registry, builds and pushes a
+  Docker image tagged with the commit hash, and deploys it to an Azure Container App.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag, and [CONTRIBUTING.md](CONTRIBUTING.md)
 for how to make and release changes.
@@ -84,10 +86,23 @@ for how to make and release changes.
       maven_repository_password: ${{ secrets.GH_PACKAGES_TOKEN }}
 ```
 
-The git actions (all but `setup-java-maven`) expect the calling job's checkout step to use `fetch-depth: 0`,
-since they read tag history or merge branches. The tag actions also need `permissions: contents: write` to
-push the tag. `sync-main-into-releases` pushes with `push_token` instead, because pushes made with
-`GITHUB_TOKEN` don't trigger the release branches' own workflows.
+```yaml
+- name: Deploy to Azure Container Apps
+  uses: Farmalogg-AS/ci/.github/actions/deploy-container-app@v0.8
+  with:
+      azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+      registry_login_server: ${{ vars.REGISTRY_LOGIN_SERVER }}
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+      image_name: ${{ vars.APP_NAME }}
+      container_app_name: <container app>
+      resource_group: <resource group>
+```
+
+The git actions (all but `setup-java-maven` and `deploy-container-app`) expect the calling job's checkout
+step to use `fetch-depth: 0`, since they read tag history or merge branches. The tag actions also need
+`permissions: contents: write` to push the tag. `sync-main-into-releases` pushes with `push_token` instead,
+because pushes made with `GITHUB_TOKEN` don't trigger the release branches' own workflows.
 
 Only steps that are the same in several repos live here. Triggers, choosing which environment to deploy to,
 the build command itself, and when to tag stay in each project's own workflow files.

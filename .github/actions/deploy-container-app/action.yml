@@ -1,0 +1,78 @@
+name: Deploy to Azure Container Apps
+description: >
+    Logs in to Azure and the container registry, builds a Docker image from the checkout tagged with the short
+    HEAD commit hash, pushes it, and deploys it to an existing Azure Container App.
+
+inputs:
+    azure_credentials:
+        description: "Service principal credentials JSON for azure/login. Pass it from a secret"
+        required: true
+    registry_login_server:
+        description: 'Container registry host, e.g. "<registry>.azurecr.io"'
+        required: true
+    registry_username:
+        description: "Container registry username"
+        required: true
+    registry_password:
+        description: "Container registry password. Pass it from a secret"
+        required: true
+    acr_name:
+        description: >
+            Name of the Azure Container Registry. Defaults to registry_username, which is the registry's name when
+            logging in with its admin user.
+        required: false
+        default: ""
+    image_name:
+        description: "Image repository within the registry, typically the app name"
+        required: true
+    container_app_name:
+        description: "Container App to deploy the image to"
+        required: true
+    resource_group:
+        description: "Resource group of that Container App"
+        required: true
+    context:
+        description: "Docker build context, relative to the workspace"
+        required: false
+        default: "."
+
+outputs:
+    image:
+        description: 'The image that was pushed and deployed, e.g. "<registry>.azurecr.io/<app>:1a2b3c4"'
+        value: ${{ steps.image.outputs.image }}
+
+runs:
+    using: composite
+    steps:
+        - name: Log in to Azure
+          uses: azure/login@v2
+          with:
+              creds: ${{ inputs.azure_credentials }}
+
+        - name: Log in to the container registry
+          uses: azure/docker-login@v1
+          with:
+              login-server: ${{ inputs.registry_login_server }}
+              username: ${{ inputs.registry_username }}
+              password: ${{ inputs.registry_password }}
+
+        - name: Build and push the image, tagged with the commit hash
+          id: image
+          shell: bash
+          env:
+              REGISTRY: ${{ inputs.registry_login_server }}
+              IMAGE_NAME: ${{ inputs.image_name }}
+              BUILD_CONTEXT: ${{ inputs.context }}
+          run: |
+              IMAGE="${REGISTRY}/${IMAGE_NAME}:$(git rev-parse --short HEAD)"
+              docker build "$BUILD_CONTEXT" -t "$IMAGE"
+              docker push "$IMAGE"
+              echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+        - name: Deploy to Azure Container Apps
+          uses: azure/container-apps-deploy-action@v1
+          with:
+              acrName: ${{ inputs.acr_name || inputs.registry_username }}
+              containerAppName: ${{ inputs.container_app_name }}
+              resourceGroup: ${{ inputs.resource_group }}
+              imageToDeploy: ${{ steps.image.outputs.image }}

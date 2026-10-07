@@ -11,6 +11,11 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   `maven_repository_url` is given, writes a `settings.xml` with that repository and its credentials. Replaces
   the `actions/setup-java` step plus the inline `settings.xml` heredoc in callers' workflows; the generated
   file is the same.
+- `deploy-container-app` — new action: logs in to Azure (`azure/login@v2`) and the registry, builds the image
+  from the checkout tagged with the short HEAD commit hash, pushes it, and deploys it to a Container App.
+  Replaces callers' Azure login, ACR login, commit hash, docker build/push and deploy steps. Azure login now
+  happens right before the deploy rather than before the build, so a build that needs Azure credentials (e.g.
+  tests reading Key Vault) must log in itself first.
 
 ## v0.7
 
