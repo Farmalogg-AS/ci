@@ -65,13 +65,8 @@ for how to make and release changes.
 ```
 
 ```yaml
-- uses: actions/checkout@v4
-  with:
-      fetch-depth: 0
-      persist-credentials: false # otherwise git keeps pushing as GITHUB_TOKEN instead of push_token
-
 - name: Sync main into release branches
-  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.7
   with:
       push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```

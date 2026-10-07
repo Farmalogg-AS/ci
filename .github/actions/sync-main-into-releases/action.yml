@@ -42,7 +42,9 @@ runs:
             git checkout -B "$branch" "$ref"
 
             if git merge --no-ff --no-edit origin/main; then
-                git push origin "$branch"
+                # Clear the GITHUB_TOKEN auth header actions/checkout persists by default, so the push
+                # authenticates with push_token from the remote URL and triggers the branch's workflows.
+                git -c http.https://github.com/.extraheader= push origin "$branch"
             else
                 echo "::error::Conflict syncing main into $branch — resolve manually (merge main into $branch and push)"
                 git merge --abort

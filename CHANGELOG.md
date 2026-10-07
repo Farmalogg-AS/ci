@@ -7,6 +7,9 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 - `compute-release-tag` — detects a shipped release from a `release/vX.Y` branch merge into `main` again. v0.6
   looked for `prod/vX.Y` merges instead, which never match, so every run was treated as a hotfix (patch bump).
+- `sync-main-into-releases` — now always pushes with `push_token`. Before, the `GITHUB_TOKEN` that
+  `actions/checkout` stores by default took precedence, so sync pushes didn't trigger the release branches'
+  workflows unless the caller's checkout set `persist-credentials: false`. That setting is no longer needed.
 
 ## v0.6
 
