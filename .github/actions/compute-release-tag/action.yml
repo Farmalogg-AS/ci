@@ -37,10 +37,11 @@ runs:
 
               if [ -z "$BUMP" ]; then
                   # Auto-detect: look for the highest "release/vX.Y" branch merged into main since the last tag.
+                  # "|| true": finding none (a hotfix) is expected, and would otherwise fail the step via pipefail.
                   RANGE=""
                   [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
                   MERGED_XY=$(git log $RANGE --merges --format=%s \
-                      | grep -oE 'release/v[0-9]+\.[0-9]+' \
+                      | { grep -oE 'release/v[0-9]+\.[0-9]+' || true; } \
                       | sed 's#release/v##' \
                       | sort -V | tail -1)
 

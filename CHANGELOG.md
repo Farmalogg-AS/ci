@@ -5,6 +5,9 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 ## v0.9
 
+- `compute-release-tag` — fixed the step failing, after the prod deploy, whenever no `release/vX.Y` branch was
+  merged since the last tag, i.e. for every hotfix: GitHub runs `shell: bash` with `pipefail`, so finding no
+  release merge failed the step instead of choosing a patch bump.
 - `merge-longtest-branches` — new `merged` output: the `longtest/*` branches it merged, as space-separated
   `<branch>@<commit>` entries (empty if none).
 - `compute-qa-tag` — the tag annotation now describes the deploy: base branch and commit, merged `longtest/*`
