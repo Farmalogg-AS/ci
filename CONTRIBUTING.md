@@ -6,7 +6,9 @@ specific to this repo: other repos run these actions by version tag, so every ta
 
 ## Making a change
 
-- Keep actions generic: no secrets, and no repo-specific build/deploy steps (see [README.md](README.md)).
+- Keep actions generic: no steps specific to one repo (see [README.md](README.md)), and, since this repo is
+  public, no secrets or infrastructure names (registries, resource groups, app names, package URLs). Take
+  those as inputs; callers pass secrets from their own `secrets` context.
 - Update [README.md](README.md) and add an entry under the upcoming version in [CHANGELOG.md](CHANGELOG.md) in
   the same commit as the change, so every tagged commit documents itself.
 - In the changelog entry, call out anything consuming repos must change when they bump to that version (e.g. a

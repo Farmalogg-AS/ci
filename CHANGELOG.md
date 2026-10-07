@@ -7,6 +7,10 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 - `resolve-qa-base-ref` / `compute-qa-tag` — branch names now reach the scripts through environment variables
   instead of being pasted into them, so a branch named e.g. `longtest/$(cmd)` can't run commands in the job.
+- `setup-java-maven` — new action: installs a Temurin JDK (21 by default) with Maven caching, and, if
+  `maven_repository_url` is given, writes a `settings.xml` with that repository and its credentials. Replaces
+  the `actions/setup-java` step plus the inline `settings.xml` heredoc in callers' workflows; the generated
+  file is the same.
 
 ## v0.7
 

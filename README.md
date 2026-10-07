@@ -1,9 +1,11 @@
 # ci
 
 Shared GitHub Actions used across Farmalogg project repos. Public so any repo in the org can reference it
-via `uses:` without extra access configuration. Contains no secrets or business logic — just the generic git
-steps (tagging, resolving the QA base branch, merging) of the flow described in
-[RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
+via `uses:` without extra access configuration. Contains no secrets, infrastructure names or business logic:
+the generic git steps (tagging, resolving the QA base branch, merging) of the flow described in
+[RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md), and build steps several
+repos share. Anything repo- or environment-specific, including credentials, is passed in as inputs by the
+calling workflow.
 
 ## Actions
 
@@ -18,6 +20,8 @@ steps (tagging, resolving the QA base branch, merging) of the flow described in
 - `.github/actions/sync-main-into-releases` — merges `main` into every `release/v*` branch that doesn't
   already contain it (skips branches with no diff, so this doesn't loop back on a release branch's own merge
   into `main`), and pushes the result so each branch's own CI retriggers normally.
+- `.github/actions/setup-java-maven` — installs a JDK with Maven caching, and optionally configures an
+  authenticated Maven repository (e.g. GitHub Packages) to resolve dependencies from.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag, and [CONTRIBUTING.md](CONTRIBUTING.md)
 for how to make and release changes.
@@ -71,13 +75,22 @@ for how to make and release changes.
       push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
 
-All actions expect the calling job's checkout step to use `fetch-depth: 0`, since they read tag history or
-merge branches. The tag actions also need `permissions: contents: write` to push the tag.
-`sync-main-into-releases` pushes with `push_token` instead, because pushes made with `GITHUB_TOKEN` don't
-trigger the release branches' own workflows.
+```yaml
+- name: Set up Java and Maven
+  uses: Farmalogg-AS/ci/.github/actions/setup-java-maven@v0.8
+  with:
+      maven_repository_url: https://maven.pkg.github.com/<owner>/<repo> # omit if no extra repository is needed
+      maven_repository_username: ${{ secrets.GH_PACKAGES_USERNAME }}
+      maven_repository_password: ${{ secrets.GH_PACKAGES_TOKEN }}
+```
 
-Only generic git logic is shared here — build/test/deploy steps differ per repo's tech stack and stay in each
-project's own workflow files.
+The git actions (all but `setup-java-maven`) expect the calling job's checkout step to use `fetch-depth: 0`,
+since they read tag history or merge branches. The tag actions also need `permissions: contents: write` to
+push the tag. `sync-main-into-releases` pushes with `push_token` instead, because pushes made with
+`GITHUB_TOKEN` don't trigger the release branches' own workflows.
+
+Only steps that are the same in several repos live here. Triggers, choosing which environment to deploy to,
+the build command itself, and when to tag stay in each project's own workflow files.
 
 ## Scripts
 
