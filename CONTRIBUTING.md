@@ -22,3 +22,5 @@ specific to this repo: other repos run these actions by version tag, so every ta
   for every release, including breaking ones.
 - Never move or delete a pushed tag. Consuming repos resolve `@vX.Y` on every run, so moving a tag silently
   changes what runs in every repo, and deleting it breaks them. Fix a bad release with a new version instead.
+  The "Protect version tags" ruleset (Settings → Rules → Rulesets) enforces this for `v*` tags, admins
+  included.
