@@ -11,6 +11,12 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   TEST, and to QA with a new QA tag if it was still `QA_RELEASE_BRANCH`, and it happened again on every push
   to `main` until the branch was deleted. A release branch cut from `main` with no commits of its own yet is
   still synced.
+- `compute-release-tag` — detects a shipped release from its QA tags instead of merge commit messages: if a
+  `qa/vX.Y.0.N` tag of a newer release became reachable from `main` since the latest prod tag, it tags
+  `prod/vX.Y.0`. Before, it searched merge commit subjects for `release/vX.Y`, so in a repo using the PR title
+  as the merge commit title, a shipped release was tagged as a hotfix (patch bump) unless the title contained
+  the branch name. A release branch still has to be merged with a merge commit, not squashed or rebased, and
+  must have been deployed to QA at least once.
 
 ## v0.9
 

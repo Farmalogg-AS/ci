@@ -1,9 +1,11 @@
 name: Compute release (Prod) tag
 description: >
     Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
-    Auto-detects minor vs. patch by looking for a "release/vX.Y" merge commit into main since the last tag
-    (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
-    it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
+    Auto-detects minor vs. patch from the QA tags: if a qa/vX.Y.0.N tag of a newer release became reachable
+    from main since the last tag, release/vX.Y was just merged into main (shipped) => minor, resetting the patch
+    to 0. Otherwise it's a hotfix already on main => patch is incremented instead. This doesn't depend on the
+    merge commit's message, but it needs a real merge: a squash or rebase merge leaves the QA-tagged commits
+    off main. The "bump" input can force either choice.
     Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
     QA pre-release tags. The tag annotation records the previous tag, why it bumped as it did, the image, the
     trigger, a link to the run, and the changes since the previous tag.
@@ -46,14 +48,17 @@ runs:
               REASON="set manually"
 
               if [ -z "$BUMP" ]; then
-                  # Auto-detect: look for the highest "release/vX.Y" branch merged into main since the last tag.
-                  # "|| true": finding none (a hotfix) is expected, and would otherwise fail the step via pipefail.
-                  RANGE=""
-                  [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
-                  MERGED_XY=$(git log $RANGE --merges --format=%s \
-                      | { grep -oE 'release/v[0-9]+\.[0-9]+' || true; } \
-                      | sed 's#release/v##' \
-                      | sort -V | tail -1)
+                  # Auto-detect: find the highest release whose QA tags became reachable since the last tag. QA
+                  # tags point at release branch commits, which only reach main when the branch is merged into
+                  # it. Tags on main's own first-parent history are skipped: they're from a release branch
+                  # without commits of its own yet, so they don't mean it shipped.
+                  MAIN_FIRST_PARENTS=$(git rev-list --first-parent HEAD)
+                  NEW_QA_TAGS=$(git tag --list "qa/v*.*.0.*" --merged HEAD ${LATEST_TAG:+--no-merged "$LATEST_TAG"})
+                  MERGED_XY=$(
+                      for qa_tag in $NEW_QA_TAGS; do
+                          grep -qxF "$(git rev-list -n 1 "$qa_tag")" <<<"$MAIN_FIRST_PARENTS" || echo "$qa_tag"
+                      done | sed -nE 's#^qa/v([0-9]+\.[0-9]+)\.0\.[0-9]+$#\1#p' | sort -V | tail -1
+                  )
 
                   if [ -n "$MERGED_XY" ]; then
                       MERGED_MAJOR="${MERGED_XY%%.*}"
@@ -76,7 +81,7 @@ runs:
               fi
 
               if [ "$BUMP" = "minor" ]; then
-                  # Manual override with no detected release/vX.Y merge: just increment the minor.
+                  # Manual override with no detected release: just increment the minor.
                   [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
                   PATCH=0
               else

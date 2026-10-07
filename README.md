@@ -13,9 +13,10 @@ calling workflow.
   unique `qa/branch/<branch>/<run>` tag for any other branch deployed to QA. The tag annotation records the
   base commit, the merged `longtest/*` branches, the image, the trigger and a link to the run, and for release
   branches, the changes since the previous QA tag of that release (or the latest prod tag).
-- `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag. The tag
-  annotation records the previous tag, why it bumped minor or patch, the image, the trigger and a link to the
-  run, and the changes since the previous tag.
+- `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag: `vX.Y.0` if
+  `release/vX.Y` was merged into `main` since the latest one, detected from that release's QA tags having
+  reached `main`, otherwise the next patch. The tag annotation records the previous tag, why it bumped minor
+  or patch, the image, the trigger and a link to the run, and the changes since the previous tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
   under QA testing right now, checks it out, and outputs its name and commit. Used so a push to `main`, the active release branch, or any
   `longtest/*` branch all resolve to the same QA deploy correctly.
