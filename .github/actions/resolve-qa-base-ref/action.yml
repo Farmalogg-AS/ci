@@ -1,18 +1,23 @@
 name: Resolve QA base ref
 description: >
   Figures out which branch is "the real thing under QA testing" (a release branch, or main if none is
-  active), checks it out, and outputs its name and commit. Works no matter which of main / the active release branch /
-  a longtest/* branch actually triggered the run, since a push to any of those should redeploy to the same
-  shared QA environment.
+  active), checks it out, and outputs its name and commit. Works no matter which of main / the active release
+  branch / a longtest/* branch actually triggered the run, since a push to any of those should redeploy to the
+  same shared QA environment. If the branch in qa_release_branch doesn't exist in this repo (e.g. the release
+  shipped and its branch was deleted, or it was never cut here), it falls back to main with a warning.
 
 inputs:
   qa_release_branch:
-    description: 'Value of the vars.QA_RELEASE_BRANCH org variable (may be empty if no release is active)'
+    description: >
+      Value of the vars.QA_RELEASE_BRANCH org variable (may be empty if no release is active, or name a
+      branch that doesn't exist in this repo)
     required: true
 
 outputs:
   base_ref:
-    description: "The branch actually under QA testing, e.g. release/v2.3, or main if none is active"
+    description: >
+      The branch actually under QA testing, e.g. release/v2.3, or main if none is active or it doesn't exist
+      in this repo
     value: ${{ steps.resolve.outputs.base_ref }}
   base_sha:
     description: >
@@ -35,7 +40,19 @@ runs:
         else
             # main, or a longtest/* branch: neither has "its own" version, so defer to whichever release
             # (if any) is actually under QA testing right now.
-            BASE_REF="${QA_RELEASE_BRANCH:-main}"
+            if [ -z "$QA_RELEASE_BRANCH" ]; then
+                BASE_REF=main
+            elif git ls-remote --exit-code origin "refs/heads/$QA_RELEASE_BRANCH" > /dev/null; then
+                BASE_REF="$QA_RELEASE_BRANCH"
+            else
+                # Exit code 2 means no such branch. Anything else is a real error (e.g. network), not a
+                # reason to deploy main instead.
+                STATUS=$?
+                [ "$STATUS" -eq 2 ] || exit "$STATUS"
+                # A shipped release's branch is deleted on merge, and its content is on main by then.
+                echo "::warning::$QA_RELEASE_BRANCH (QA_RELEASE_BRANCH) doesn't exist in this repo; using main"
+                BASE_REF=main
+            fi
         fi
 
         echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"

@@ -18,8 +18,10 @@ calling workflow.
   reached `main`, otherwise the next patch. The tag annotation records the previous tag, why it bumped minor
   or patch, the image, the trigger and a link to the run, and the changes since the previous tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
-  under QA testing right now, checks it out, and outputs its name and commit. Used so a push to `main`, the active release branch, or any
-  `longtest/*` branch all resolve to the same QA deploy correctly.
+  under QA testing right now, checks it out, and outputs its name and commit. Used so a push to `main`, the
+  active release branch, or any `longtest/*` branch all resolve to the same QA deploy correctly. Uses `main`
+  if `QA_RELEASE_BRANCH` is empty, or names a branch that doesn't exist in the repo (e.g. a shipped release
+  whose branch was deleted), with a warning in the latter case.
 - `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
   anywhere; exists only for the build that follows. Outputs which branches it merged, at which commit.

@@ -3,6 +3,13 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.11
+
+- `resolve-qa-base-ref` — uses `main` as the QA base, with a warning, when the branch named in
+  `QA_RELEASE_BRANCH` doesn't exist in the repo. Before, the QA deploy failed, so after shipping a release
+  (which deletes its branch on merge) every `longtest/*` push failed until the next release was promoted or
+  the variable emptied, as did any repo where the release branch was never cut.
+
 ## v0.10
 
 - `sync-main-into-releases` — no longer syncs release branches already merged into `main`. Before, shipping
