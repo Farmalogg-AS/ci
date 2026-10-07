@@ -2,7 +2,7 @@
 # Switches the release currently under QA testing: updates the QA_RELEASE_BRANCH org variable, then pushes an
 # empty "chore: promote to QA" commit to that branch in every repo that has it.
 #
-# Why the empty commit: qa-deploy-main.yml is triggered by a push to the release branch named in
+# Why the empty commit: qa.push.yml is triggered by a push to the release branch named in
 # QA_RELEASE_BRANCH (same as any other "sync main into the release branch" push). Updating the variable alone
 # fires no GitHub event, so nothing redeploys automatically. If the branch already happens to be fully synced
 # with main there's nothing new to merge/push either — the empty commit guarantees a triggering push either

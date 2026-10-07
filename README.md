@@ -1,13 +1,14 @@
 # ci
 
 Shared GitHub Actions used across Farmalogg project repos. Public so any repo in the org can reference it
-via `uses:` without extra access configuration. Contains no secrets or business logic — just the generic
-git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
+via `uses:` without extra access configuration. Contains no secrets or business logic — just the generic git
+steps (tagging, resolving the QA base branch, merging) of the flow described in
+[RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md).
 
 ## Actions
 
 - `.github/actions/compute-qa-tag` — creates and pushes the next `qa/vX.Y.0.N` tag for a release branch.
-- `.github/actions/compute-release-tag` — creates and pushes the next production `release/vX.Y.Z` tag.
+- `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
   under QA testing right now, and checks it out. Used so a push to `main`, the active release branch, or any
   `longtest/*` branch all resolve to the same QA deploy correctly.
@@ -25,14 +26,14 @@ for how to make and release changes.
 
 ```yaml
 - name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.6
   with:
       release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.3
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.6
   with:
       bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
 ```
@@ -40,39 +41,56 @@ for how to make and release changes.
 ```yaml
 - name: Resolve which branch is actually under QA testing
   id: qa_base
-  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.4
+  uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.6
   with:
       qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
-- name: Create QA tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.1
-  with:
-      release_branch: ${{ steps.qa_base.outputs.base_ref }}
+- name: Save QA base commit
+  id: qa_base_commit
+  run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
-  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.4
+  uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.6
+
+# ... build and deploy ...
+
+# Tag only after a successful deploy, and on the real base commit rather than the ephemeral longtest merge.
+- name: Restore QA base commit for tagging
+  run: git checkout --detach "${{ steps.qa_base_commit.outputs.sha }}"
+
+- name: Create QA tag
+  uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.6
+  with:
+      release_branch: ${{ steps.qa_base.outputs.base_ref }}
 ```
 
 ```yaml
-- name: Sync main into release branches
-  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.5
+- uses: actions/checkout@v4
   with:
-    push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
+      fetch-depth: 0
+      persist-credentials: false # otherwise git keeps pushing as GITHUB_TOKEN instead of push_token
+
+- name: Sync main into release branches
+  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.6
+  with:
+      push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
 
-Both require the calling job's checkout step to use `fetch-depth: 0` (full tag history) and
-`permissions: contents: write` (to push the tag).
+All actions expect the calling job's checkout step to use `fetch-depth: 0`, since they read tag history or
+merge branches. The tag actions also need `permissions: contents: write` to push the tag.
+`sync-main-into-releases` pushes with `push_token` instead, because pushes made with `GITHUB_TOKEN` don't
+trigger the release branches' own workflows.
 
-Only the tag-computation logic is shared here — build/test/deploy steps differ per repo's tech stack and
-stay in each project's own workflow files.
+Only generic git logic is shared here — build/test/deploy steps differ per repo's tech stack and stay in each
+project's own workflow files.
 
 ## Scripts
 
 - `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
   `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote to QA` commit to that branch in
-  every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires and creates the tag.
-  Currently only affects repos with that workflow (so far just `varer`); others are skipped silently until
-  their workflows are rewritten too.
+  every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires, deploys and creates the tag.
+  Repos without that branch are skipped. Repos that have the branch but not yet the new `qa.push.yml` still
+  get the empty commit; it just doesn't deploy anything there.
 
 ### Doing it manually, without the script
 
