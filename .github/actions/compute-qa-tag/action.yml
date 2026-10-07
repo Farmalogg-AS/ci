@@ -12,6 +12,18 @@ inputs:
             Branch this QA build was deployed from, e.g. "release/v2.3". Any branch is accepted; the name is kept
             from when only release branches were.
         required: true
+    longtest_branches:
+        description: >
+            The longtest/* branches merged into the deployed build, as given by merge-longtest-branches' merged
+            output. Listed in the tag annotation; leave empty if none were merged.
+        required: false
+        default: ""
+    image:
+        description: >
+            The deployed container image, e.g. deploy-container-app's image output. Recorded in the tag annotation if
+            given.
+        required: false
+        default: ""
 
 outputs:
     tag_name:
@@ -25,19 +37,47 @@ runs:
           shell: bash
           env:
               BRANCH: ${{ inputs.release_branch }}
+              LONGTEST_BRANCHES: ${{ inputs.longtest_branches }}
+              IMAGE: ${{ inputs.image }}
           run: |
+              PREVIOUS=""
               if [[ "$BRANCH" =~ ^release/v([0-9]+\.[0-9]+)$ ]]; then
                   MAJOR_MINOR="${BASH_REMATCH[1]}"
                   LAST_N=$(git tag --list "qa/v${MAJOR_MINOR}.0.*" | sed -E "s/.*\.([0-9]+)$/\1/" | sort -n | tail -1)
                   NEXT_N=$(( ${LAST_N:-0} + 1 ))
                   TAG_NAME="qa/v${MAJOR_MINOR}.0.${NEXT_N}"
+                  # Changes are listed since the previous QA tag of this release, or for its first one, since the
+                  # latest prod release.
+                  if [ -n "$LAST_N" ]; then
+                      PREVIOUS="qa/v${MAJOR_MINOR}.0.${LAST_N}"
+                  else
+                      PREVIOUS=$(git tag --list "prod/v*.*.*" | sort -V | tail -1)
+                  fi
               else
                   TAG_NAME="qa/branch/${BRANCH}/${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
               fi
 
               git config user.name "github-actions"
               git config user.email "github-actions@github.com"
-              git tag -a "$TAG_NAME" -m "Deployed to QA"
+
+              LONGTEST=""
+              for entry in $LONGTEST_BRANCHES; do
+                  SHA="${entry##*@}"
+                  LONGTEST+="${LONGTEST:+, }${entry%@*} @ ${SHA:0:7}"
+              done
+
+              {
+                  echo "Deployed to QA"
+                  echo
+                  echo "Base: $BRANCH @ $(git rev-parse --short HEAD)"
+                  echo "Longtest branches included: ${LONGTEST:-none}"
+                  bash "$GITHUB_ACTION_PATH/../lib/describe-run.sh"
+                  if [ -n "$PREVIOUS" ]; then
+                      echo
+                      echo "Changes since $PREVIOUS:"
+                      bash "$GITHUB_ACTION_PATH/../lib/describe-changes.sh" "$PREVIOUS..HEAD"
+                  fi
+              } | git tag -a "$TAG_NAME" --cleanup=whitespace -F -
               git push origin "$TAG_NAME"
 
               echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"

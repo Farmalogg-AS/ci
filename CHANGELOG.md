@@ -7,6 +7,11 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 
 - `merge-longtest-branches` — new `merged` output: the `longtest/*` branches it merged, as space-separated
   `<branch>@<commit>` entries (empty if none).
+- `compute-qa-tag` — the tag annotation now describes the deploy: base branch and commit, merged `longtest/*`
+  branches, image, trigger and a link to the run. Release-branch tags also list the changes since the previous
+  QA tag of that release (or, for its first, the latest prod tag): `feat`, `fix`, `perf` and `vis` commits by
+  subject, other types counted. To record the longtest branches and image, pass the new optional inputs
+  `longtest_branches` (`merge-longtest-branches`' `merged` output) and `image`.
 
 ## v0.8
 

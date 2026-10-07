@@ -10,7 +10,9 @@ calling workflow.
 ## Actions
 
 - `.github/actions/compute-qa-tag` — creates and pushes the next `qa/vX.Y.0.N` tag for a release branch, or a
-  unique `qa/branch/<branch>/<run>` tag for any other branch deployed to QA.
+  unique `qa/branch/<branch>/<run>` tag for any other branch deployed to QA. The tag annotation records the
+  base commit, the merged `longtest/*` branches, the image, the trigger and a link to the run, and for release
+  branches, the changes since the previous QA tag of that release (or the latest prod tag).
 - `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
   under QA testing right now, checks it out, and outputs its name and commit. Used so a push to `main`, the active release branch, or any
@@ -25,6 +27,10 @@ calling workflow.
   authenticated Maven repository (e.g. GitHub Packages) to resolve dependencies from.
 - `.github/actions/deploy-container-app` — logs in to Azure and the container registry, builds and pushes a
   Docker image tagged with the commit hash, and deploys it to an Azure Container App.
+
+The tag actions share scripts in `.github/actions/lib/` for their annotations. `describe-changes.sh` lists the
+changes, grouping commits by their `<type>: <description>` subject: `feat`, `fix`, `perf` and `vis` commits are
+listed, other types only counted.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag, and [CONTRIBUTING.md](CONTRIBUTING.md)
 for how to make and release changes.
@@ -53,9 +59,10 @@ for how to make and release changes.
       qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
+  id: longtest
   uses: Farmalogg-AS/ci/.github/actions/merge-longtest-branches@v0.8
 
-# ... build and deploy ...
+# ... build and deploy, e.g. with deploy-container-app as step "deploy" ...
 
 # Tag only after a successful deploy, and on the real base commit rather than the ephemeral longtest merge.
 - name: Restore QA base commit for tagging
@@ -65,6 +72,8 @@ for how to make and release changes.
   uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.8
   with:
       release_branch: ${{ steps.qa_base.outputs.base_ref }}
+      longtest_branches: ${{ steps.longtest.outputs.merged }} # optional, listed in the tag annotation
+      image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
 ```
 
 ```yaml
