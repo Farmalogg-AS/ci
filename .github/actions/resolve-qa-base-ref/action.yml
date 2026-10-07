@@ -20,10 +20,10 @@ runs:
   steps:
     - id: resolve
       shell: bash
+      env:
+        TRIGGER: ${{ github.ref_name }}
+        QA_RELEASE_BRANCH: ${{ inputs.qa_release_branch }}
       run: |
-        TRIGGER="${{ github.ref_name }}"
-        QA_RELEASE_BRANCH="${{ inputs.qa_release_branch }}"
-
         if [[ "$TRIGGER" == release/v* ]]; then
             # A release branch pushed directly is the source of truth for its own state.
             BASE_REF="$TRIGGER"
@@ -37,6 +37,8 @@ runs:
 
     - name: Check out the resolved base ref
       shell: bash
+      env:
+        BASE_REF: ${{ steps.resolve.outputs.base_ref }}
       run: |
-        git fetch origin "${{ steps.resolve.outputs.base_ref }}"
-        git checkout -B "${{ steps.resolve.outputs.base_ref }}" FETCH_HEAD
+        git fetch origin "$BASE_REF"
+        git checkout -B "$BASE_REF" FETCH_HEAD

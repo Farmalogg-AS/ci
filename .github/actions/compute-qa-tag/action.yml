@@ -20,8 +20,9 @@ runs:
     steps:
         - id: tag
           shell: bash
+          env:
+              BRANCH: ${{ inputs.release_branch }}
           run: |
-              BRANCH="${{ inputs.release_branch }}"
               MAJOR_MINOR="${BRANCH#release/v}"
 
               LAST_N=$(git tag --list "qa/v${MAJOR_MINOR}.0.*" | sed -E "s/.*\.([0-9]+)$/\1/" | sort -n | tail -1)

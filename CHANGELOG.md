@@ -3,6 +3,11 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.8
+
+- `resolve-qa-base-ref` / `compute-qa-tag` — branch names now reach the scripts through environment variables
+  instead of being pasted into them, so a branch named e.g. `longtest/$(cmd)` can't run commands in the job.
+
 ## v0.7
 
 - `compute-release-tag` — detects a shipped release from a `release/vX.Y` branch merge into `main` again. v0.6
