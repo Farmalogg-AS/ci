@@ -18,6 +18,8 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
 - `compute-release-tag` — the tag annotation now records the previous tag, why it bumped minor or patch,
   trigger, a link to the run, and the changes since the previous tag, listed as for QA tags. To record the
   image, pass the new optional input `image`.
+- `compute-qa-tag` / `compute-release-tag` — tags are now created by `github-actions[bot]`, with its noreply
+  address, so GitHub shows and links the bot as the tagger.
 
 ## v0.8
 
