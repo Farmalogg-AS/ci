@@ -23,8 +23,8 @@ calling workflow.
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
   anywhere; exists only for the build that follows. Outputs which branches it merged, at which commit.
 - `.github/actions/sync-main-into-releases` — merges `main` into every `release/v*` branch that doesn't
-  already contain it (skips branches with no diff, so this doesn't loop back on a release branch's own merge
-  into `main`), and pushes the result so each branch's own CI retriggers normally.
+  already contain it, and pushes the result so each branch's own CI retriggers normally. Skips release
+  branches already merged into `main` (shipped), so shipping a release doesn't push and redeploy it again.
 - `.github/actions/setup-java-maven` — installs a JDK with Maven caching, and optionally configures an
   authenticated Maven repository (e.g. GitHub Packages) to resolve dependencies from.
 - `.github/actions/deploy-container-app` — logs in to Azure and the container registry, builds and pushes a

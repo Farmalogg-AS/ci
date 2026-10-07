@@ -3,6 +3,15 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.10
+
+- `sync-main-into-releases` — no longer syncs release branches already merged into `main`. Before, shipping
+  a release (merging its branch into `main`) made the sync merge `main` straight back into that branch and
+  push it, since the branch didn't contain the new merge commit. That push redeployed the shipped release to
+  TEST, and to QA with a new QA tag if it was still `QA_RELEASE_BRANCH`, and it happened again on every push
+  to `main` until the branch was deleted. A release branch cut from `main` with no commits of its own yet is
+  still synced.
+
 ## v0.9
 
 - `compute-release-tag` — fixed the step failing, after the prod deploy, whenever no `release/vX.Y` branch was
