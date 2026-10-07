@@ -18,7 +18,8 @@ git-tag-bumping steps described in [RELEASE-FLOW.md](https://github.com/Farmalog
   already contain it (skips branches with no diff, so this doesn't loop back on a release branch's own merge
   into `main`), and pushes the result so each branch's own CI retriggers normally.
 
-See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag.
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version tag, and [CONTRIBUTING.md](CONTRIBUTING.md)
+for how to make and release changes.
 
 ## Usage
 
