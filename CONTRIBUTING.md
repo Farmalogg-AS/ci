@@ -20,8 +20,12 @@ specific to this repo: other repos run these actions by version tag, so every ta
 ## Releasing a version
 
 - Tag the commit on `main` with the next version, as an annotated tag summarising the release, and push it:
-  `git tag -a v0.N -m "v0.N: <summary>"`, then `git push origin v0.N`. While on `v0.x`, bump the minor number
+  `git tag -a v0.N -m "<summary>"`, then `git push origin v0.N`. While on `v0.x`, bump the minor number
   for every release, including breaking ones.
+- Keep the annotation a one-line summary of what the version changes, e.g.
+  `richer qa/prod tag annotations, fix prod tagging for hotfixes`. Leave out the version number, since the
+  tag name already carries it (`git tag -n` shows both). Details belong in the version's
+  [CHANGELOG.md](CHANGELOG.md) section.
 - Never move or delete a pushed tag. Consuming repos resolve `@vX.Y` on every run, so moving a tag silently
   changes what runs in every repo, and deleting it breaks them. Fix a bad release with a new version instead.
   The "Protect version tags" ruleset (Settings → Rules → Rulesets) enforces this for `v*` tags, admins
