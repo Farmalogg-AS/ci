@@ -3,6 +3,11 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.9
+
+- `merge-longtest-branches` — new `merged` output: the `longtest/*` branches it merged, as space-separated
+  `<branch>@<commit>` entries (empty if none).
+
 ## v0.8
 
 - `resolve-qa-base-ref` / `compute-qa-tag` — branch names now reach the scripts through environment variables

@@ -5,20 +5,33 @@ description: >
   here is pushed anywhere — the merge only exists in this job's workspace, so long-lived work never leaks
   into a release branch or main.
 
+outputs:
+  merged:
+    description: >
+      The longtest/* branches that were merged, as space-separated "<branch>@<commit>" entries, e.g.
+      "longtest/partner-x@5d6e7f8a…". Empty if there were none. Pass it to compute-qa-tag's longtest_branches
+      input to record them in the QA tag.
+    value: ${{ steps.merge.outputs.merged }}
+
 runs:
   using: composite
   steps:
-    - shell: bash
+    - id: merge
+      shell: bash
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
 
         git fetch origin '+refs/heads/longtest/*:refs/remotes/origin/longtest/*'
 
+        MERGED=()
         for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/longtest/*); do
             echo "::notice::Merging $ref into the ephemeral QA integration build"
             if ! git merge --no-ff --no-edit "$ref"; then
                 echo "::error::Conflict merging $ref into QA — resolve it on that branch (merge the QA base in) and push again"
                 exit 1
             fi
+            MERGED+=("${ref#origin/}@$(git rev-parse "$ref")")
         done
+
+        echo "merged=${MERGED[*]}" >> "$GITHUB_OUTPUT"

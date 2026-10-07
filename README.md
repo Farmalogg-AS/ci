@@ -17,7 +17,7 @@ calling workflow.
   `longtest/*` branch all resolve to the same QA deploy correctly.
 - `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
-  anywhere; exists only for the build that follows.
+  anywhere; exists only for the build that follows. Outputs which branches it merged, at which commit.
 - `.github/actions/sync-main-into-releases` — merges `main` into every `release/v*` branch that doesn't
   already contain it (skips branches with no diff, so this doesn't loop back on a release branch's own merge
   into `main`), and pushes the result so each branch's own CI retriggers normally.
