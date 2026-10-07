@@ -1,18 +1,21 @@
 name: Compute QA tag
 description: >
-    Computes the next qa/vX.Y.0.N tag for the given release branch, creates it, and pushes it.
-    X.Y comes from the branch name; N auto-increments from the highest existing qa tag for that X.Y.
-    Tags live under the qa/ namespace (refs/tags/qa/...) to keep them visually and programmatically separate
-    from production release tags.
+    Tags the checked-out commit as deployed to QA from the given branch, and pushes the tag. For a release/vX.Y
+    branch that's the next qa/vX.Y.0.N tag, where N auto-increments from the highest existing qa tag for that
+    X.Y. Any other branch has no version to count from, so it gets a unique
+    qa/branch/<branch>/<run id>.<run attempt> tag instead. Tags live under the qa/ namespace (refs/tags/qa/...)
+    to keep them visually and programmatically separate from production release tags.
 
 inputs:
     release_branch:
-        description: 'Release branch this QA build targets, e.g. "release/v2.3"'
+        description: >
+            Branch this QA build was deployed from, e.g. "release/v2.3". Any branch is accepted; the name is kept
+            from when only release branches were.
         required: true
 
 outputs:
     tag_name:
-        description: "The tag that was created, e.g. qa/v2.3.0.4"
+        description: 'The tag that was created, e.g. "qa/v2.3.0.4" or "qa/branch/feature/x/123456789.1"'
         value: ${{ steps.tag.outputs.tag_name }}
 
 runs:
@@ -23,11 +26,14 @@ runs:
           env:
               BRANCH: ${{ inputs.release_branch }}
           run: |
-              MAJOR_MINOR="${BRANCH#release/v}"
-
-              LAST_N=$(git tag --list "qa/v${MAJOR_MINOR}.0.*" | sed -E "s/.*\.([0-9]+)$/\1/" | sort -n | tail -1)
-              NEXT_N=$(( ${LAST_N:-0} + 1 ))
-              TAG_NAME="qa/v${MAJOR_MINOR}.0.${NEXT_N}"
+              if [[ "$BRANCH" =~ ^release/v([0-9]+\.[0-9]+)$ ]]; then
+                  MAJOR_MINOR="${BASH_REMATCH[1]}"
+                  LAST_N=$(git tag --list "qa/v${MAJOR_MINOR}.0.*" | sed -E "s/.*\.([0-9]+)$/\1/" | sort -n | tail -1)
+                  NEXT_N=$(( ${LAST_N:-0} + 1 ))
+                  TAG_NAME="qa/v${MAJOR_MINOR}.0.${NEXT_N}"
+              else
+                  TAG_NAME="qa/branch/${BRANCH}/${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+              fi
 
               git config user.name "github-actions"
               git config user.email "github-actions@github.com"

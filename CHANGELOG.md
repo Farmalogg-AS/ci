@@ -16,6 +16,10 @@ Notable changes to the shared actions/scripts here, per version tag. Consuming r
   Replaces callers' Azure login, ACR login, commit hash, docker build/push and deploy steps. Azure login now
   happens right before the deploy rather than before the build, so a build that needs Azure credentials (e.g.
   tests reading Key Vault) must log in itself first.
+- `compute-qa-tag` — also tags branches other than `release/vX.Y`, with a unique
+  `qa/branch/<branch>/<run id>.<run attempt>` tag, so callers no longer need their own tag step for manual
+  deploys of other branches. Before, those got a meaningless tag such as `qa/vmain.0.1`. The input is still
+  called `release_branch`.
 
 ## v0.7
 

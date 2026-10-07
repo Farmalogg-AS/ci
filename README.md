@@ -9,7 +9,8 @@ calling workflow.
 
 ## Actions
 
-- `.github/actions/compute-qa-tag` — creates and pushes the next `qa/vX.Y.0.N` tag for a release branch.
+- `.github/actions/compute-qa-tag` — creates and pushes the next `qa/vX.Y.0.N` tag for a release branch, or a
+  unique `qa/branch/<branch>/<run>` tag for any other branch deployed to QA.
 - `.github/actions/compute-release-tag` — creates and pushes the next production `prod/vX.Y.Z` tag.
 - `.github/actions/resolve-qa-base-ref` — figures out which branch (a release branch, or `main`) is actually
   under QA testing right now, and checks it out. Used so a push to `main`, the active release branch, or any
