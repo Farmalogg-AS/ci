@@ -3,6 +3,11 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.7
+
+- `compute-release-tag` — detects a shipped release from a `release/vX.Y` branch merge into `main` again. v0.6
+  looked for `prod/vX.Y` merges instead, which never match, so every run was treated as a hotfix (patch bump).
+
 ## v0.6
 
 - `compute-release-tag` — now creates/pushes the next production `prod/vX.Y.Z` tag instead of `release/vX.Y.Z`, so production tags are visually and programmatically distinguishable from QA tags (e.g. `git tag --list "prod/*"`).

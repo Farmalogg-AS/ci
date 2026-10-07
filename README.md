@@ -33,7 +33,7 @@ for how to make and release changes.
 
 ```yaml
 - name: Create release tag
-  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.6
+  uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.7
   with:
       bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
 ```

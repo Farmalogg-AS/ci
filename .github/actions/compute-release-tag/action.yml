@@ -1,7 +1,7 @@
 name: Compute release (Prod) tag
 description: >
     Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
-    Auto-detects minor vs. patch by looking for a "prod/vX.Y" merge commit into main since the last tag
+    Auto-detects minor vs. patch by looking for a "release/vX.Y" merge commit into main since the last tag
     (a new release branch was just shipped => minor, resetting the patch to 0). If no such merge is found,
     it's a hotfix already on main => patch is incremented instead. The "bump" input can force either choice.
     Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
@@ -36,12 +36,12 @@ runs:
               BUMP="${{ inputs.bump }}"
 
               if [ -z "$BUMP" ]; then
-                  # Auto-detect: look for the highest "prod/vX.Y" merged into main since the last tag.
+                  # Auto-detect: look for the highest "release/vX.Y" branch merged into main since the last tag.
                   RANGE=""
                   [ -n "$LATEST_TAG" ] && RANGE="${LATEST_TAG}..HEAD"
                   MERGED_XY=$(git log $RANGE --merges --format=%s \
-                      | grep -oE 'prod/v[0-9]+\.[0-9]+' \
-                      | sed 's#prod/v##' \
+                      | grep -oE 'release/v[0-9]+\.[0-9]+' \
+                      | sed 's#release/v##' \
                       | sort -V | tail -1)
 
                   if [ -n "$MERGED_XY" ]; then
@@ -62,7 +62,7 @@ runs:
               fi
 
               if [ "$BUMP" = "minor" ]; then
-                  # Manual override with no detected prod/vX.Y merge: just increment the minor.
+                  # Manual override with no detected release/vX.Y merge: just increment the minor.
                   [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
                   PATCH=0
               else
