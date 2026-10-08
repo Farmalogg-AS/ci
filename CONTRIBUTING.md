@@ -1,8 +1,8 @@
 # Contributing
 
-Commit messages and commit scope follow the workspace-wide
-[CONTRIBUTING.md](https://github.com/Farmalogg-AS/root/blob/main/CONTRIBUTING.md). This file only covers what's
-specific to this repo: other repos run these actions by version tag, so every tag is a published release.
+Commit messages and commit scope follow the workspace-wide [CONTRIBUTING.md](../CONTRIBUTING.md)
+([GitHub](https://github.com/Farmalogg-AS/root/blob/main/CONTRIBUTING.md)). This file only covers what's specific to
+this repo: other repos run these actions by version tag, so every tag is a published release.
 
 ## Making a change
 

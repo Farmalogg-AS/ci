@@ -1,11 +1,10 @@
 # ci
 
-Shared GitHub Actions used across Farmalogg project repos. Public so any repo in the org can reference it
-via `uses:` without extra access configuration. Contains no secrets, infrastructure names or business logic:
-the generic git steps (tagging, resolving the QA base branch, merging) of the flow described in
-[RELEASE-FLOW.md](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md), and build steps several
-repos share. Anything repo- or environment-specific, including credentials, is passed in as inputs by the
-calling workflow.
+Shared GitHub Actions used across Farmalogg project repos. Public so any repo in the org can reference it via `uses:`
+without extra access configuration. Contains no secrets, infrastructure names or business logic: the generic git steps
+(tagging, resolving the QA base branch, merging) of the flow described in [RELEASE-FLOW.md](../RELEASE-FLOW.md)
+([GitHub](https://github.com/Farmalogg-AS/root/blob/main/RELEASE-FLOW.md)), and build steps several repos share.
+Anything repo- or environment-specific, including credentials, is passed in as inputs by the calling workflow.
 
 ## Actions
 
