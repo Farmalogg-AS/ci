@@ -3,6 +3,16 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.12
+
+- `deploy-container-app` — uses `azure/container-apps-deploy-action@v2`, `azure/login@v3` and
+  `azure/docker-login@v2`, up from v1, v2 and v1. `container-apps-deploy-action` v2 is a JavaScript rewrite of
+  the v1 composite action, with the same inputs.
+- `setup-java-maven` — uses `actions/setup-java@v6`, up from v4.
+
+Consuming repos don't need to change anything. `azure/login` v3 and `setup-java` v5+ run on Node 24, which
+needs runner v2.327.1 or later; GitHub-hosted runners already have it.
+
 ## v0.11
 
 - `resolve-qa-base-ref` — uses `main` as the QA base, with a warning, when the branch named in
