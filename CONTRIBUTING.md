@@ -17,6 +17,16 @@ this repo: other repos run these actions by version tag, so every tag is a publi
   (`uses: Farmalogg-AS/ci/.github/actions/<action>@<branch-or-sha>`), and switch it back to a version tag before
   merging.
 
+## Dependabot PRs
+
+Dependabot opens PRs that bump the third-party actions used here. Merging them changes nothing in consuming repos,
+which stay on their pinned tag until a new version is released. After merging them:
+
+1. Add one commit with their entry under the upcoming version in [CHANGELOG.md](CHANGELOG.md), since Dependabot's
+   commits don't include one.
+2. Release a version (see [Releasing a version](#releasing-a-version)). Each consuming repo's Dependabot then opens
+   a PR moving it to the new tag.
+
 ## Releasing a version
 
 - Tag the commit on `main` with the next version, as an annotated tag summarising the release, and push it:
