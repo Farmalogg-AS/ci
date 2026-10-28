@@ -45,7 +45,7 @@ runs:
     using: composite
     steps:
         - name: Log in to Azure
-          uses: azure/login@v2
+          uses: azure/login@v3
           with:
               creds: ${{ inputs.azure_credentials }}
 
