@@ -50,7 +50,7 @@ runs:
               creds: ${{ inputs.azure_credentials }}
 
         - name: Log in to the container registry
-          uses: azure/docker-login@v1
+          uses: azure/docker-login@v2
           with:
               login-server: ${{ inputs.registry_login_server }}
               username: ${{ inputs.registry_username }}
