@@ -19,13 +19,12 @@ this repo: other repos run these actions by version tag, so every tag is a publi
 
 ## Dependabot PRs
 
-Dependabot opens PRs that bump the third-party actions used here. Merging them changes nothing in consuming repos,
-which stay on their pinned tag until a new version is released. After merging them:
+Dependabot opens PRs that bump the third-party actions used here. Merging them reaches consuming repos only through a
+new version. After merging them:
 
 1. Add one commit with their entry under the upcoming version in [CHANGELOG.md](CHANGELOG.md), since Dependabot's
    commits don't include one.
-2. Release a version (see [Releasing a version](#releasing-a-version)). Each consuming repo's Dependabot then opens
-   a PR moving it to the new tag.
+2. Release a version (see [Releasing a version](#releasing-a-version)).
 
 ## Releasing a version
 
@@ -40,3 +39,5 @@ which stay on their pinned tag until a new version is released. After merging th
   changes what runs in every repo, and deleting it breaks them. Fix a bad release with a new version instead.
   The "Protect version tags" ruleset (Settings → Rules → Rulesets) enforces this for `v*` tags, admins
   included.
+- Then bump the pinned tag in every consuming repo's workflows. A repo you miss still gets a PR for the bump from its
+  own Dependabot, at its next weekly check.
