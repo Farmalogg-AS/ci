@@ -1,110 +1,110 @@
 name: Compute release (Prod) tag
 description: >
-    Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
-    Auto-detects minor vs. patch from the QA tags: if a qa/vX.Y.0.N tag of a newer release became reachable
-    from main since the last tag, release/vX.Y was just merged into main (shipped) => minor, resetting the patch
-    to 0. Otherwise it's a hotfix already on main => patch is incremented instead. This doesn't depend on the
-    merge commit's message, but it needs a real merge: a squash or rebase merge leaves the QA-tagged commits
-    off main. The "bump" input can force either choice.
-    Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
-    QA pre-release tags. The tag annotation records the previous tag, why it bumped as it did, the image, the
-    trigger, a link to the run, and the changes since the previous tag.
+  Computes the next production vX.Y.Z tag from the latest final release tag, creates it, and pushes it.
+  Auto-detects minor vs. patch from the QA tags: if a qa/vX.Y.0.N tag of a newer release became reachable
+  from main since the last tag, release/vX.Y was just merged into main (shipped) => minor, resetting the patch
+  to 0. Otherwise it's a hotfix already on main => patch is incremented instead. This doesn't depend on the
+  merge commit's message, but it needs a real merge: a squash or rebase merge leaves the QA-tagged commits
+  off main. The "bump" input can force either choice.
+  Tags live under the prod/ namespace (refs/tags/prod/...), separate from the qa/ namespace used for
+  QA pre-release tags. The tag annotation records the previous tag, why it bumped as it did, the image, the
+  trigger, a link to the run, and the changes since the previous tag.
 
 inputs:
-    bump:
-        description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
-        required: false
-        default: ""
-    image:
-        description: >
-            The deployed container image, e.g. deploy-container-app's image output. Recorded in the tag annotation if
-            given.
-        required: false
-        default: ""
+  bump:
+    description: 'Optional override: "minor" or "patch". Leave empty to auto-detect from merge history.'
+    required: false
+    default: ""
+  image:
+    description: >
+      The deployed container image, e.g. deploy-container-app's image output. Recorded in the tag annotation if
+      given.
+    required: false
+    default: ""
 
 outputs:
-    tag_name:
-        description: "The tag that was created, e.g. prod/v2.3.0"
-        value: ${{ steps.tag.outputs.tag_name }}
+  tag_name:
+    description: "The tag that was created, e.g. prod/v2.3.0"
+    value: ${{ steps.tag.outputs.tag_name }}
 
 runs:
-    using: composite
-    steps:
-        - id: tag
-          shell: bash
-          env:
-              IMAGE: ${{ inputs.image }}
-          run: |
-              # Latest final release tag (prod/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
-              LATEST_TAG=$(git tag --list "prod/v*.*.*" | sort -V | tail -1)
-              LATEST="${LATEST_TAG#prod/v}"
-              MAJOR="${LATEST%%.*}"
-              REST="${LATEST#*.}"
-              MINOR="${REST%%.*}"
-              PATCH="${REST#*.}"
-              MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
+  using: composite
+  steps:
+    - id: tag
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+      run: |
+        # Latest final release tag (prod/vX.Y.Z — QA pre-release tags live under the separate qa/ namespace)
+        LATEST_TAG=$(git tag --list "prod/v*.*.*" | sort -V | tail -1)
+        LATEST="${LATEST_TAG#prod/v}"
+        MAJOR="${LATEST%%.*}"
+        REST="${LATEST#*.}"
+        MINOR="${REST%%.*}"
+        PATCH="${REST#*.}"
+        MAJOR="${MAJOR:-0}"; MINOR="${MINOR:-0}"; PATCH="${PATCH:-0}"
 
-              BUMP="${{ inputs.bump }}"
-              REASON="set manually"
+        BUMP="${{ inputs.bump }}"
+        REASON="set manually"
 
-              if [ -z "$BUMP" ]; then
-                  # Auto-detect: find the highest release whose QA tags became reachable since the last tag. QA
-                  # tags point at release branch commits, which only reach main when the branch is merged into
-                  # it. Tags on main's own first-parent history are skipped: they're from a release branch
-                  # without commits of its own yet, so they don't mean it shipped.
-                  MAIN_FIRST_PARENTS=$(git rev-list --first-parent HEAD)
-                  NEW_QA_TAGS=$(git tag --list "qa/v*.*.0.*" --merged HEAD ${LATEST_TAG:+--no-merged "$LATEST_TAG"})
-                  MERGED_XY=$(
-                      for qa_tag in $NEW_QA_TAGS; do
-                          grep -qxF "$(git rev-list -n 1 "$qa_tag")" <<<"$MAIN_FIRST_PARENTS" || echo "$qa_tag"
-                      done | sed -nE 's#^qa/v([0-9]+\.[0-9]+)\.0\.[0-9]+$#\1#p' | sort -V | tail -1
-                  )
+        if [ -z "$BUMP" ]; then
+            # Auto-detect: find the highest release whose QA tags became reachable since the last tag. QA
+            # tags point at release branch commits, which only reach main when the branch is merged into
+            # it. Tags on main's own first-parent history are skipped: they're from a release branch
+            # without commits of its own yet, so they don't mean it shipped.
+            MAIN_FIRST_PARENTS=$(git rev-list --first-parent HEAD)
+            NEW_QA_TAGS=$(git tag --list "qa/v*.*.0.*" --merged HEAD ${LATEST_TAG:+--no-merged "$LATEST_TAG"})
+            MERGED_XY=$(
+                for qa_tag in $NEW_QA_TAGS; do
+                    grep -qxF "$(git rev-list -n 1 "$qa_tag")" <<<"$MAIN_FIRST_PARENTS" || echo "$qa_tag"
+                done | sed -nE 's#^qa/v([0-9]+\.[0-9]+)\.0\.[0-9]+$#\1#p' | sort -V | tail -1
+            )
 
-                  if [ -n "$MERGED_XY" ]; then
-                      MERGED_MAJOR="${MERGED_XY%%.*}"
-                      MERGED_MINOR="${MERGED_XY#*.}"
-                      # Newer major.minor than the latest tag => a release branch was just shipped => minor bump.
-                      if [ "$MERGED_MAJOR.$MERGED_MINOR" != "$MAJOR.$MINOR" ] && \
-                         printf '%s\n%s\n' "$MAJOR.$MINOR" "$MERGED_MAJOR.$MERGED_MINOR" | sort -V | tail -1 | grep -qx "$MERGED_MAJOR.$MERGED_MINOR"; then
-                          BUMP="minor"
-                          MAJOR="$MERGED_MAJOR"
-                          MINOR="$MERGED_MINOR"
-                          REASON="auto: release/v$MERGED_XY merged"
-                      else
-                          BUMP="patch"
-                          REASON="auto: no new release branch merged"
-                      fi
-                  else
-                      BUMP="patch"
-                      REASON="auto: no new release branch merged"
-                  fi
-              fi
+            if [ -n "$MERGED_XY" ]; then
+                MERGED_MAJOR="${MERGED_XY%%.*}"
+                MERGED_MINOR="${MERGED_XY#*.}"
+                # Newer major.minor than the latest tag => a release branch was just shipped => minor bump.
+                if [ "$MERGED_MAJOR.$MERGED_MINOR" != "$MAJOR.$MINOR" ] && \
+                   printf '%s\n%s\n' "$MAJOR.$MINOR" "$MERGED_MAJOR.$MERGED_MINOR" | sort -V | tail -1 | grep -qx "$MERGED_MAJOR.$MERGED_MINOR"; then
+                    BUMP="minor"
+                    MAJOR="$MERGED_MAJOR"
+                    MINOR="$MERGED_MINOR"
+                    REASON="auto: release/v$MERGED_XY merged"
+                else
+                    BUMP="patch"
+                    REASON="auto: no new release branch merged"
+                fi
+            else
+                BUMP="patch"
+                REASON="auto: no new release branch merged"
+            fi
+        fi
 
-              if [ "$BUMP" = "minor" ]; then
-                  # Manual override with no detected release: just increment the minor.
-                  [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
-                  PATCH=0
-              else
-                  PATCH=$(( PATCH + 1 ))
-              fi
+        if [ "$BUMP" = "minor" ]; then
+            # Manual override with no detected release: just increment the minor.
+            [ -z "${MERGED_XY:-}" ] && MINOR=$(( MINOR + 1 ))
+            PATCH=0
+        else
+            PATCH=$(( PATCH + 1 ))
+        fi
 
-              TAG_NAME="prod/v${MAJOR}.${MINOR}.${PATCH}"
+        TAG_NAME="prod/v${MAJOR}.${MINOR}.${PATCH}"
 
-              git config user.name "github-actions[bot]"
-              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-              {
-                  echo "Deployed to PROD"
-                  echo
-                  echo "Previous: ${LATEST_TAG:-none}"
-                  echo "Bump: $BUMP ($REASON)"
-                  bash "$GITHUB_ACTION_PATH/../lib/describe-run.sh"
-                  if [ -n "$LATEST_TAG" ]; then
-                      echo
-                      echo "Changes since $LATEST_TAG:"
-                      bash "$GITHUB_ACTION_PATH/../lib/describe-changes.sh" "$LATEST_TAG..HEAD"
-                  fi
-              } | git tag -a "$TAG_NAME" --cleanup=whitespace -F -
-              git push origin "$TAG_NAME"
+        {
+            echo "Deployed to PROD"
+            echo
+            echo "Previous: ${LATEST_TAG:-none}"
+            echo "Bump: $BUMP ($REASON)"
+            bash "$GITHUB_ACTION_PATH/../lib/describe-run.sh"
+            if [ -n "$LATEST_TAG" ]; then
+                echo
+                echo "Changes since $LATEST_TAG:"
+                bash "$GITHUB_ACTION_PATH/../lib/describe-changes.sh" "$LATEST_TAG..HEAD"
+            fi
+        } | git tag -a "$TAG_NAME" --cleanup=whitespace -F -
+        git push origin "$TAG_NAME"
 
-              echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+        echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"

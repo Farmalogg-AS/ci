@@ -16,8 +16,8 @@ needs runner v2.327.1 or later; GitHub-hosted runners already have it.
 ## v0.11
 
 - `resolve-qa-base-ref` — uses `main` as the QA base, with a warning, when the branch named in
-  `QA_RELEASE_BRANCH` doesn't exist in the repo. Before, the QA deploy failed, so after shipping a release
-  (which deletes its branch on merge) every `longtest/*` push failed until the next release was promoted or
+  `QA_RELEASE_BRANCH` doesn't exist in the repo. Before, the QA deploy failed, so after shipping a release (which
+  deletes its branch on merge) every `longtest/*` push failed until the next release was promoted or
   the variable emptied, as did any repo where the release branch was never cut.
 
 ## v0.10
@@ -105,8 +105,8 @@ needs runner v2.327.1 or later; GitHub-hosted runners already have it.
 
 ## v0.4
 
-- `resolve-qa-base-ref` — new action: resolves and checks out whichever branch is actually under QA testing
-  (a release branch, or `main` if none is active), regardless of whether `main`, the release branch, or a
+- `resolve-qa-base-ref` — new action: resolves and checks out whichever branch is actually under QA testing (a release
+  branch, or `main` if none is active), regardless of whether `main`, the release branch, or a
   `longtest/*` branch triggered the run.
 - `merge-longtest-branches` — new action: ephemerally merges every active `longtest/*` branch (long-lived
   branches for extended external testing that must never reach `main`) on top of the QA base, for the build

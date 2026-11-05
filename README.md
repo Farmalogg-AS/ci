@@ -45,15 +45,15 @@ for how to make and release changes.
 - name: Create QA tag
   uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.12
   with:
-      release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+    release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 ```
 
 ```yaml
 - name: Create release tag
   uses: Farmalogg-AS/ci/.github/actions/compute-release-tag@v0.12
   with:
-      bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
-      image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
+    bump: ${{ inputs.bump != 'auto' && inputs.bump || '' }} # auto-detects minor/patch when empty
+    image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
 ```
 
 ```yaml
@@ -61,7 +61,7 @@ for how to make and release changes.
   id: qa_base
   uses: Farmalogg-AS/ci/.github/actions/resolve-qa-base-ref@v0.12
   with:
-      qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
+    qa_release_branch: ${{ vars.QA_RELEASE_BRANCH }}
 
 - name: Merge active longtest/* branches (ephemeral, not pushed)
   id: longtest
@@ -76,38 +76,38 @@ for how to make and release changes.
 - name: Create QA tag
   uses: Farmalogg-AS/ci/.github/actions/compute-qa-tag@v0.12
   with:
-      release_branch: ${{ steps.qa_base.outputs.base_ref }}
-      longtest_branches: ${{ steps.longtest.outputs.merged }} # optional, listed in the tag annotation
-      image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
+    release_branch: ${{ steps.qa_base.outputs.base_ref }}
+    longtest_branches: ${{ steps.longtest.outputs.merged }} # optional, listed in the tag annotation
+    image: ${{ steps.deploy.outputs.image }} # optional, recorded in the tag annotation
 ```
 
 ```yaml
 - name: Sync main into release branches
   uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.12
   with:
-      push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
+    push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
 
 ```yaml
 - name: Set up Java and Maven
   uses: Farmalogg-AS/ci/.github/actions/setup-java-maven@v0.12
   with:
-      maven_repository_url: https://maven.pkg.github.com/<owner>/<repo> # omit if no extra repository is needed
-      maven_repository_username: ${{ secrets.GH_PACKAGES_USERNAME }}
-      maven_repository_password: ${{ secrets.GH_PACKAGES_TOKEN }}
+    maven_repository_url: https://maven.pkg.github.com/<owner>/<repo> # omit if no extra repository is needed
+    maven_repository_username: ${{ secrets.GH_PACKAGES_USERNAME }}
+    maven_repository_password: ${{ secrets.GH_PACKAGES_TOKEN }}
 ```
 
 ```yaml
 - name: Deploy to Azure Container Apps
   uses: Farmalogg-AS/ci/.github/actions/deploy-container-app@v0.12
   with:
-      azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
-      registry_login_server: ${{ vars.REGISTRY_LOGIN_SERVER }}
-      registry_username: ${{ vars.REGISTRY_USERNAME }}
-      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
-      image_name: ${{ vars.APP_NAME }}
-      container_app_name: <container app>
-      resource_group: <resource group>
+    azure_credentials: ${{ secrets.AZURE_CREDENTIALS }}
+    registry_login_server: ${{ vars.REGISTRY_LOGIN_SERVER }}
+    registry_username: ${{ vars.REGISTRY_USERNAME }}
+    registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+    image_name: ${{ vars.APP_NAME }}
+    container_app_name: <container app>
+    resource_group: <resource group>
 ```
 
 The git actions (all but `setup-java-maven` and `deploy-container-app`) expect the calling job's checkout
