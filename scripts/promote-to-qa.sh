@@ -8,8 +8,9 @@
 # with main there's nothing new to merge/push either — the empty commit guarantees a triggering push either
 # way, without requiring an actual code change.
 #
-# Requires: gh CLI, authenticated with an account/token that has org variable admin rights, and `gh auth
-# setup-git` (or otherwise configured git credentials) so plain `git push` works against these repos.
+# Requires: gh CLI, authenticated with an account/token that has org variable admin rights (for a classic login,
+# the admin:org scope: `gh auth refresh -h github.com -s admin:org`), and `gh auth setup-git` (or otherwise
+# configured git credentials) so plain `git push` works against these repos.
 #
 # Usage: ./promote-to-qa.sh release/v2.4
 
