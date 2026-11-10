@@ -3,6 +3,16 @@
 Notable changes to the shared actions/scripts here, per version tag. Consuming repos pin to a tag (e.g.
 `@v0.1`) rather than `@main`; bump the pinned ref deliberately after checking what changed.
 
+## v0.13
+
+- `sync-release-branches` — replaces `sync-main-into-releases`. Merges the pushed branch into the next active
+  release branch only, instead of `main` into every release branch, so the changes cascade up one release at a
+  time. Changes merged into a release branch now reach later releases automatically too, not just changes on
+  `main`.
+
+Consuming repos must switch their sync workflow to `sync-release-branches`, and trigger it on pushes to
+`release/v*` as well as `main`.
+
 ## v0.12
 
 - `deploy-container-app` — uses `azure/container-apps-deploy-action@v2`, `azure/login@v3` and

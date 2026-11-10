@@ -24,8 +24,9 @@ Anything repo- or environment-specific, including credentials, is passed in as i
 - `.github/actions/merge-longtest-branches` — ephemerally merges every active `longtest/*` branch on top of
   the current checkout, for long-lived external-test work that must always be visible in QA. Never pushed
   anywhere; exists only for the build that follows. Outputs which branches it merged, at which commit.
-- `.github/actions/sync-main-into-releases` — merges `main` into every `release/v*` branch that doesn't
-  already contain it, and pushes the result so each branch's own CI retriggers normally. Skips release
+- `.github/actions/sync-release-branches` — merges the pushed branch into the next release branch:
+  `main` into the lowest `release/vX.Y`, a release branch into the next higher one. Its push retriggers that
+  branch's own CI, including this sync, so changes cascade up through every later release. Skips release
   branches already merged into `main` (shipped), so shipping a release doesn't push and redeploy it again.
 - `.github/actions/setup-java-maven` — installs a JDK with Maven caching, and optionally configures an
   authenticated Maven repository (e.g. GitHub Packages) to resolve dependencies from.
@@ -82,8 +83,9 @@ for how to make and release changes.
 ```
 
 ```yaml
-- name: Sync main into release branches
-  uses: Farmalogg-AS/ci/.github/actions/sync-main-into-releases@v0.12
+# Run on pushes to main and release/v*
+- name: Sync into the next release branch
+  uses: Farmalogg-AS/ci/.github/actions/sync-release-branches@v0.13
   with:
     push_token: ${{ secrets.SYNC_RELEASE_BRANCHES_PAT }} # a PAT/App token, NOT the default GITHUB_TOKEN
 ```
@@ -112,7 +114,7 @@ for how to make and release changes.
 
 The git actions (all but `setup-java-maven` and `deploy-container-app`) expect the calling job's checkout
 step to use `fetch-depth: 0`, since they read tag history or merge branches. The tag actions also need
-`permissions: contents: write` to push the tag. `sync-main-into-releases` pushes with `push_token` instead,
+`permissions: contents: write` to push the tag. `sync-release-branches` pushes with `push_token` instead,
 because pushes made with `GITHUB_TOKEN` don't trigger the release branches' own workflows.
 
 Only steps that are the same in several repos live here. Triggers, choosing which environment to deploy to,

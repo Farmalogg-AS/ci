@@ -1,0 +1,81 @@
+name: Sync into the next release branch
+description: >
+  Merges the pushed branch into the next release branch and pushes it: main into the lowest release/vX.Y, a
+  release/vX.Y into the next higher one. The push triggers the target's own workflows, this sync included, so
+  changes cascade up through every later release. Skips shipped release branches (already merged into main),
+  so they aren't pushed and redeployed. On a merge conflict the job fails, and the cascade stops there until
+  someone merges by hand and pushes.
+
+inputs:
+  push_token:
+    description: >
+      Token for `git push`, with contents:write. Must be a PAT or GitHub App token, since pushes made with
+      GITHUB_TOKEN don't trigger the target's workflows.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SOURCE: ${{ github.ref_name }}
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git remote set-url origin "https://x-access-token:${{ inputs.push_token }}@github.com/${{ github.repository }}.git"
+
+        git fetch origin main '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+
+        case "$SOURCE" in
+            main) SOURCE_VERSION="" ;;
+            release/v*) SOURCE_VERSION="${SOURCE#release/v}" ;;
+            *) echo "::error::Can only sync from main or a release/v* branch, not $SOURCE"; exit 1 ;;
+        esac
+
+        # Read into a variable rather than piping into `grep -q`: with pipefail, grep exiting early would fail
+        # the pipeline with SIGPIPE.
+        MAIN_FIRST_PARENTS=$(git rev-list --first-parent origin/main)
+
+        IN_FLIGHT_VERSIONS=$(
+            for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/release/v*); do
+                version="${ref#origin/release/v}"
+                [[ "$version" =~ ^[0-9]+\.[0-9]+$ ]] || continue
+                # Shipped: reachable from main, but not on its first-parent history. A branch cut from main with no
+                # commits of its own yet is on it, so it isn't shipped.
+                if git merge-base --is-ancestor "$ref" origin/main \
+                    && ! grep -qxF "$(git rev-parse "$ref")" <<<"$MAIN_FIRST_PARENTS"; then
+                    continue
+                fi
+                echo "$version"
+            done | sort -V
+        )
+
+        if [ -z "$SOURCE_VERSION" ]; then
+            TARGET_VERSION=$(head -1 <<<"$IN_FLIGHT_VERSIONS")
+        else
+            TARGET_VERSION=$(printf '%s\n%s\n' "$SOURCE_VERSION" "$IN_FLIGHT_VERSIONS" | sort -uV \
+                | grep -A1 -xF "$SOURCE_VERSION" | sed -n 2p)
+        fi
+
+        if [ -z "$TARGET_VERSION" ]; then
+            echo "::notice::No release branch to sync $SOURCE into"
+            exit 0
+        fi
+        TARGET="release/v$TARGET_VERSION"
+
+        if git merge-base --is-ancestor "origin/$SOURCE" "origin/$TARGET"; then
+            echo "::notice::$TARGET already contains $SOURCE, nothing to sync"
+            exit 0
+        fi
+
+        echo "::notice::Syncing $SOURCE into $TARGET"
+        git checkout -B "$TARGET" "origin/$TARGET"
+
+        if ! git merge --no-ff --no-edit "origin/$SOURCE"; then
+            git merge --abort
+            echo "::error::Conflict syncing $SOURCE into $TARGET — merge $SOURCE into $TARGET by hand and push"
+            exit 1
+        fi
+
+        # Drop the GITHUB_TOKEN auth header actions/checkout persists, so the push uses push_token.
+        git -c http.https://github.com/.extraheader= push origin "$TARGET"
