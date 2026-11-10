@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
-# Switches the release currently under QA testing: updates the QA_RELEASE_BRANCH org variable, then pushes an
-# empty "chore: promote <release-branch> to QA" commit to that branch in every repo. Repos that don't have the
-# branch yet get it cut from main first: without it, main's changes would never reach TEST or QA there (only
-# release branches deploy, and the main sync has nothing to merge into), and its next prod tag would bump the
-# patch instead of the minor version, breaking lockstep versioning.
+# Switches which release is under QA testing: sets the QA_RELEASE_BRANCH org variable, then pushes an empty
+# "chore: promote <release-branch> to QA" commit to that branch in every repo.
 #
-# Why the empty commit: qa.push.yml is triggered by a push to the release branch named in
-# QA_RELEASE_BRANCH (same as any other "sync main into the release branch" push). Updating the variable alone
-# fires no GitHub event, so nothing redeploys automatically. If the branch already happens to be fully synced
-# with main there's nothing new to merge/push either — the empty commit guarantees a triggering push either
-# way, without requiring an actual code change.
+# Repos without the branch get it cut from main first. Only release branches deploy to TEST and QA, so without
+# it main's changes never get there, and the repo wouldn't release the same vX.Y as the others.
 #
-# Requires: gh CLI, authenticated with an account/token that has org variable admin rights (for a classic login,
-# the admin:org scope: `gh auth refresh -h github.com -s admin:org`), and `gh auth setup-git` (or otherwise
-# configured git credentials) so plain `git push` works against these repos.
+# The empty commit triggers the QA deploy (qa.push.yml): setting the variable fires no event, and the branch may
+# have nothing new to push. On a newly cut branch, it also gives the release a commit of its own, so it can be
+# merged into main and its prod tag bumps the minor version rather than the patch.
+#
+# Requires: gh CLI logged in with org variable admin rights (classic token: `gh auth refresh -h github.com -s
+# admin:org`), and git credentials for plain `git push` (e.g. `gh auth setup-git`).
 #
 # Usage: ./promote-to-qa.sh release/v2.4
 
