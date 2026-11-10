@@ -122,18 +122,19 @@ the build command itself, and when to tag stay in each project's own workflow fi
 
 - `scripts/promote-to-qa.sh <release-branch>` — switches which release is under QA testing: updates the
   `QA_RELEASE_BRANCH` org variable, then pushes an empty `chore: promote <release-branch> to QA` commit to that
-  branch in every repo that has it, so the normal push-based trigger (`qa.push.yml`) fires, deploys and creates the
-  tag. Repos without that branch are skipped. Repos that have the branch but not yet the new `qa.push.yml` still
-  get the empty commit; it just doesn't deploy anything there.
+  branch in every repo, so the normal push-based trigger (`qa.push.yml`) fires, deploys and creates the
+  tag. Repos without that branch get it cut from `main` first, so `main`'s changes reach TEST and QA there too
+  and the repo stays on the same `vX.Y` as the rest. Repos that have the branch but not yet the new `qa.push.yml`
+  still get the empty commit; it just doesn't deploy anything there.
 
 ### Doing it manually, without the script
 
 1. Update the `QA_RELEASE_BRANCH` org variable (Settings → Organization → Secrets and variables → Actions →
    Variables) to the new release branch, e.g. `release/v2.4`.
-2. For each repo that has that branch: push a commit to it. If you're merging `main` in anyway (the normal
-   "sync" step), that push is enough — it'll trigger the deploy now that the variable points there. If the
-   branch is already fully up to date and there's nothing to merge, push an empty commit instead so there's
-   still something to trigger it:
+2. In each repo that doesn't have that branch yet, cut it from `main`. Then push a commit to it in every repo. If
+   you're merging `main` in anyway (the normal "sync" step), that push is enough — it'll trigger the deploy now
+   that the variable points there. If the branch is already fully up to date and there's nothing to merge, push
+   an empty commit instead so there's still something to trigger it:
     ```
     git checkout release/v2.4
     git commit --allow-empty -m "chore: promote release/v2.4 to QA"

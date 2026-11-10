@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Switches the release currently under QA testing: updates the QA_RELEASE_BRANCH org variable, then pushes an
-# empty "chore: promote <release-branch> to QA" commit to that branch in every repo that has it.
+# empty "chore: promote <release-branch> to QA" commit to that branch in every repo. Repos that don't have the
+# branch yet get it cut from main first: without it, main's changes would never reach TEST or QA there (only
+# release branches deploy, and the main sync has nothing to merge into), and its next prod tag would bump the
+# patch instead of the minor version, breaking lockstep versioning.
 #
 # Why the empty commit: qa.push.yml is triggered by a push to the release branch named in
 # QA_RELEASE_BRANCH (same as any other "sync main into the release branch" push). Updating the variable alone
@@ -35,14 +38,15 @@ WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 
 for repo in "${REPOS[@]}"; do
-    if ! gh api "repos/$ORG/$repo/branches/$BRANCH" >/dev/null 2>&1; then
-        echo "Skipping $repo (no $BRANCH branch)"
-        continue
-    fi
-
-    echo "Pushing promote-to-QA commit to $repo@$BRANCH"
     dir="$WORKDIR/$repo"
-    gh repo clone "$ORG/$repo" "$dir" -- --branch "$BRANCH" --single-branch --depth 1 --quiet
+    if gh api "repos/$ORG/$repo/branches/$BRANCH" >/dev/null 2>&1; then
+        echo "Pushing promote-to-QA commit to $repo@$BRANCH"
+        gh repo clone "$ORG/$repo" "$dir" -- --branch "$BRANCH" --single-branch --depth 1 --quiet
+    else
+        echo "Cutting $BRANCH from main in $repo and pushing promote-to-QA commit"
+        gh repo clone "$ORG/$repo" "$dir" -- --branch main --single-branch --depth 1 --quiet
+        git -C "$dir" switch --quiet --create "$BRANCH"
+    fi
     (
         cd "$dir"
         git commit --allow-empty -m "chore: promote $BRANCH to QA"
